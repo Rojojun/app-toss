@@ -6,7 +6,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 
-@Entity
+@Entity(name = "app_user")
 public class AppUserModel extends BaseEntity {
     @Column(name = "토스 유저 키")
     private Long tossUserKey;
