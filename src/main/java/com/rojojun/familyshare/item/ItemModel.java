@@ -1,15 +1,15 @@
 package com.rojojun.familyshare.item;
 
 import com.rojojun.familyshare.common.BaseEntity;
-import com.rojojun.familyshare.household.HouseholdModel;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+
+import java.util.UUID;
 
 @Entity
 public class ItemModel extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "household_id")
-    private HouseholdModel householdModel;
+    private UUID householdId;
 
     @Column(nullable = false)
     private String name;
