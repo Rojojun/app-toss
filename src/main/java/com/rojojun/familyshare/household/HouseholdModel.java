@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(name = "household")
-public class Household extends BaseEntity {
+public class HouseholdModel extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String name;
 
@@ -14,12 +14,12 @@ public class Household extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private AppUserModel creator;
 
-    public static Household of(String name, AppUserModel creator) {
-        Household household = new Household();
+    public static HouseholdModel of(String name, AppUserModel creator) {
+        HouseholdModel householdModel = new HouseholdModel();
 
-        household.name = name;
-        household.creator = creator;
+        householdModel.name = name;
+        householdModel.creator = creator;
 
-        return household;
+        return householdModel;
     }
 }

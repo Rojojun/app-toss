@@ -14,7 +14,7 @@ public class HouseholdMember {
     @MapsId("householdId")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "household_id")
-    private Household household;
+    private HouseholdModel householdModel;
 
     @MapsId("userId")
     @ManyToOne(fetch = FetchType.LAZY)
@@ -31,10 +31,10 @@ public class HouseholdMember {
     protected HouseholdMember() {
     }
 
-    public static HouseholdMember owner(Household household, AppUserModel user) {
+    public static HouseholdMember owner(HouseholdModel householdModel, AppUserModel user) {
         HouseholdMember member = new HouseholdMember();
-        member.id = new HouseholdMemberId(household.getId(), user.getId());
-        member.household = household;
+        member.id = new HouseholdMemberId(householdModel.getId(), user.getId());
+        member.householdModel = householdModel;
         member.user = user;
         member.role = HouseholdMemberRole.OWNER;
         member.joinedAt = Instant.now();
