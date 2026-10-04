@@ -1,0 +1,52 @@
+# 작은 VM 한 대(RAM 1~2GB)에서 서버와 MySQL을 함께 돌리는 구성.
+# 사용: cp .env.example .env 후 값을 채우고  docker compose up -d --build
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: family_share
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    # 메모리가 작아서 MySQL이 과하게 잡지 않도록 줄인다
+    command: >
+      --character-set-server=utf8mb4
+      --innodb-buffer-pool-size=128M
+      --performance-schema=OFF
+      --max-connections=40
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 450m
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:mysql://db:3306/family_share?serverTimezone=UTC
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      TOSS_APP_NAME: ${TOSS_APP_NAME}
+      JWT_SECRET_BASE64: ${JWT_SECRET_BASE64}
+      SPRING_PROFILES_ACTIVE: toss-mtls
+      TOSS_MTLS_CERTIFICATE: file:/certs/toss.crt
+      TOSS_MTLS_PRIVATE_KEY: file:/certs/toss.key
+      ALERT_TEMPLATE_SET_CODE: ${ALERT_TEMPLATE_SET_CODE:-}
+      # 작은 메모리에서 JVM 이 컨테이너 한도를 넘지 않게
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=60 -XX:+UseSerialGC -Xss512k
+    volumes:
+      - ${MTLS_DIR:-./certs}:/certs:ro
+    ports:
+      - "127.0.0.1:8080:8080"   # 밖으로는 열지 않고, HTTPS 터널/프록시가 이 포트로 들어온다
+    mem_limit: 600m
+
+volumes:
+  dbdata:
