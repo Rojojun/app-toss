@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#78B0FF"/><stop offset="0.55" stop-color="#5B5CF0"/><stop offset="1" stop-color="#4B2FD8"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.18" cy="0.08" r="0.85">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.3"/><stop offset="0.6" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="house" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E6E3FF"/>
+    </linearGradient>
+    <linearGradient id="link" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#FFCB52"/><stop offset="1" stop-color="#FF7A3D"/>
+    </linearGradient>
+    <filter id="sh" x="-35%" y="-35%" width="180%" height="190%">
+      <feDropShadow dx="8" dy="18" stdDeviation="15" flood-color="#2A1A8F" flood-opacity="0.38"/>
+    </filter>
+    <filter id="shs" x="-45%" y="-45%" width="200%" height="200%">
+      <feDropShadow dx="5" dy="11" stdDeviation="9" flood-color="#2A1A8F" flood-opacity="0.34"/>
+    </filter>
+  </defs>
+  <rect width="600" height="600" fill="url(#bg)"/>
+  <rect width="600" height="600" fill="url(#gloss)"/>
+  <!-- 링크는 집 뒤에서 나온다: 집이 링크에 그림자를 드리운다 -->
+  <line x1="326" y1="308" x2="462" y2="184" stroke="url(#link)" stroke-width="42" stroke-linecap="round" filter="url(#shs)"/>
+  <path d="M110 348 L232 236 L354 348 H326 V462 H138 V348 Z" fill="url(#house)" stroke="url(#house)" stroke-width="26" stroke-linejoin="round" filter="url(#sh)"/>
+  <!-- 노드는 링크 끝 위에 얹힌다 -->
+  <circle cx="470" cy="174" r="52" fill="url(#house)" filter="url(#shs)"/>
+</svg>

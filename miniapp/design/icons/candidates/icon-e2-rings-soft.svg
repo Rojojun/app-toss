@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5EE6D2"/><stop offset="0.55" stop-color="#1FA0F5"/><stop offset="1" stop-color="#1B6BEF"/></linearGradient>
+    <radialGradient id="gloss" cx="0.18" cy="0.08" r="0.85"><stop offset="0" stop-color="#fff" stop-opacity="0.30"/><stop offset="0.6" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="house" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#DDF3FF"/></linearGradient>
+    <linearGradient id="r0" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FFE04A"/><stop offset="1" stop-color="#FFA51F"/></linearGradient>
+    <mask id="m0" maskUnits="userSpaceOnUse" x="0" y="0" width="600" height="600"><circle cx="382" cy="274" r="60" fill="none" stroke="#fff" stroke-width="32"/></mask>
+    <linearGradient id="r1" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#DDF3FF"/></linearGradient>
+    <mask id="m1" maskUnits="userSpaceOnUse" x="0" y="0" width="600" height="600"><circle cx="450" cy="206" r="60" fill="none" stroke="#fff" stroke-width="32"/></mask>
+    <filter id="sh" x="-35%" y="-35%" width="180%" height="190%"><feDropShadow dx="8" dy="18" stdDeviation="15" flood-color="#0B3F8F" flood-opacity="0.38"/></filter>
+    <filter id="shs" x="-45%" y="-45%" width="200%" height="200%"><feDropShadow dx="5" dy="11" stdDeviation="9" flood-color="#0B3F8F" flood-opacity="0.30"/></filter>
+  </defs>
+  <rect width="600" height="600" fill="url(#bg)"/>
+  <rect width="600" height="600" fill="url(#gloss)"/>
+  <circle cx="382" cy="274" r="60" fill="none" stroke="url(#r0)" stroke-width="32" filter="url(#shs)"/>
+  <circle cx="450" cy="206" r="60" fill="none" stroke="url(#r1)" stroke-width="32" filter="url(#shs)"/>
+  <circle cx="450" cy="206" r="60" fill="none" stroke="#FFF3B0" stroke-width="32" mask="url(#m0)"/>
+  <path d="M110 348 L232 236 L354 348 H326 V462 H138 V348 Z" fill="url(#house)" stroke="url(#house)" stroke-width="26" stroke-linejoin="round" filter="url(#sh)"/>
+</svg>
