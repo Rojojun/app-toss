@@ -1,11 +1,21 @@
 package com.rojojun.familyshare.invitation;
 
+import com.rojojun.familyshare.common.ApiException;
 import com.rojojun.familyshare.common.BaseEntity;
+import com.rojojun.familyshare.common.ErrorCode;
+import com.rojojun.familyshare.household.HouseholdMember;
+import com.rojojun.familyshare.household.HouseholdModel;
+import com.rojojun.familyshare.user.AppUserModel;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.util.UUID;
 
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 @Entity
 @Table(name = "invitation")
 public class InvitationModel extends BaseEntity {
@@ -30,9 +40,6 @@ public class InvitationModel extends BaseEntity {
     @Version
     @Column(nullable = false)
     private long version;
-
-    protected InvitationModel() {
-    }
 
     public static InvitationModel create(
             UUID householdId,
@@ -62,14 +69,18 @@ public class InvitationModel extends BaseEntity {
         return invitation;
     }
 
-    public UUID getHouseholdId() {
-        return householdId;
-    }
-
     public boolean isAvailableAt(Instant now) {
         return revokedAt == null
                 && expiresAt.isAfter(now)
                 && usedCount < maxUses;
+    }
+
+    public HouseholdMember accept(HouseholdModel household, AppUserModel user, String nickname, Instant now) {
+        if (!isAvailableAt(now)) {
+            throw new ApiException(ErrorCode.INVITATION_UNAVAILABLE, "사용할 수 없는 초대입니다.");
+        }
+        consumeUseAt(now);
+        return HouseholdMember.member(household, user, nickname);
     }
 
     public void consumeUseAt(Instant now) {
