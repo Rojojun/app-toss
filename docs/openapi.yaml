@@ -1,0 +1,1018 @@
+openapi: 3.0.3
+info:
+  title: Family Share API
+  version: 0.1.0-draft
+  description: >-
+    가족 생필품 공동 관리 API 제안 계약. 문서에 정의된 대부분의 경로는 아직 구현되지 않았다.
+    공개 클라이언트가 anonKey 또는 userId를 신원 증명으로 제출하지 않는다.
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Postman 로컬 테스트 예시
+tags:
+  - name: Auth
+  - name: Household
+  - name: Invitation
+  - name: Item
+  - name: Alert
+security:
+  - bearerAuth: []
+paths:
+  /auth/toss/exchange:
+    post:
+      tags: [Auth]
+      operationId: exchangeTossCode
+      summary: 토스 사용자 식별키 확인 및 기존 사용자 조회 또는 신규 등록
+      description: >-
+        미니앱 진입 때 User.createAnonymousKeyAuthCode()로 받은 일회용 코드(5분, 1회)를 서버가 토스에 mTLS로 교환해 anonKey를 확인한다.
+        기존 앱 사용자는 같은 내부 ID를 재사용하고, 없으면 한 번 생성한다. 두 경우 모두 API Bearer 토큰을 반환한다.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TossExchangeRequest'
+            example:
+              code: one-time-code
+      responses:
+        '200':
+          description: 기존 앱 사용자를 찾음. 기존 app_user.id와 새 API 토큰 반환.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '201':
+          description: 앱 사용자를 처음 등록함. 생성한 app_user.id와 API 토큰 반환.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/TossAuthFailed'
+        default:
+          $ref: '#/components/responses/ApiError'
+  /me:
+    get:
+      tags: [Auth]
+      operationId: getMe
+      summary: 내 정보와 현재 참여 공간 조회
+      responses:
+        '200':
+          description: 현재 사용자
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        default:
+          $ref: '#/components/responses/ApiError'
+  /households:
+    post:
+      tags: [Household]
+      operationId: createHousehold
+      summary: 공유 공간 생성
+      description: 공간과 OWNER 멤버십을 한 트랜잭션에서 생성한다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHouseholdRequest'
+            example:
+              name: 우리 집 생필품
+      responses:
+        '201':
+          description: 생성된 공간
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HouseholdDetail'
+        default:
+          $ref: '#/components/responses/ApiError'
+  /households/{householdId}/ownership-transfer:
+    parameters:
+      - $ref: '#/components/parameters/HouseholdId'
+    post:
+      tags: [Household]
+      operationId: transferOwnership
+      summary: 소유권 이전
+      description: OWNER 전용. 대상은 현재 멤버여야 하며 본인에게는 이전할 수 없다. 이전 후 요청자는 MEMBER가 된다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferOwnershipRequest'
+      responses:
+        '200':
+          description: 변경된 공간
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HouseholdDetail'
+        '400':
+          description: 본인에게 이전하려는 경우 등 요청 값 오류
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          $ref: '#/components/responses/OwnerRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        default:
+          $ref: '#/components/responses/ApiError'
+  /households/{householdId}:
+    parameters:
+      - $ref: '#/components/parameters/HouseholdId'
+    delete:
+      tags: [Household]
+      operationId: dissolveHousehold
+      summary: 공간 해산
+      description: OWNER 전용이며 소유자 혼자 남았을 때만 가능하다. 공간의 물품, 수량 변경 이력, 초대, 알림 신청, 부족 이벤트, 멤버십이 함께 삭제된다.
+      responses:
+        '204':
+          description: 해산 완료
+        '403':
+          $ref: '#/components/responses/OwnerRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: 다른 멤버가 남아 있음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: HOUSEHOLD_NOT_EMPTY
+                message: 다른 멤버가 남아 있어 공간을 해산할 수 없습니다.
+                details: {}
+        default:
+          $ref: '#/components/responses/ApiError'
+    get:
+      tags: [Household]
+      operationId: getHousehold
+      summary: 공간과 멤버 조회
+      responses:
+        '200':
+          description: 현재 공간과 멤버
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HouseholdDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        default:
+          $ref: '#/components/responses/ApiError'
+    patch:
+      tags: [Household]
+      operationId: updateHousehold
+      summary: 공간 이름 변경
+      description: OWNER 전용.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateHouseholdRequest'
+      responses:
+        '200':
+          description: 변경된 공간
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HouseholdDetail'
+        '403':
+          $ref: '#/components/responses/OwnerRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        default:
+          $ref: '#/components/responses/ApiError'
+  /households/{householdId}/membership:
+    parameters:
+      - $ref: '#/components/parameters/HouseholdId'
+    patch:
+      tags: [Household]
+      operationId: changeNickname
+      summary: 이 공간에서 쓰는 내 이름 변경
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NicknameRequest'
+      responses:
+        '200':
+          description: 변경된 공간
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HouseholdDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        default:
+          $ref: '#/components/responses/ApiError'
+    delete:
+      tags: [Household]
+      operationId: leaveHousehold
+      summary: 현재 사용자가 공간에서 나가기
+      description: MEMBER는 본인 멤버십을 삭제할 수 있다. OWNER는 소유권 이전 후 나갈 수 있다.
+      responses:
+        '204':
+          description: 멤버십 삭제 완료
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: OWNER 이전 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: OWNER_TRANSFER_REQUIRED
+                message: 소유권을 이전한 뒤 공간에서 나갈 수 있습니다.
+                details: {}
+        default:
+          $ref: '#/components/responses/ApiError'
+  /households/{householdId}/members/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/HouseholdId'
+      - $ref: '#/components/parameters/UserId'
+    delete:
+      tags: [Household]
+      operationId: removeMember
+      summary: 일반 멤버 내보내기
+      description: OWNER 전용. OWNER 삭제는 이 API에서 허용하지 않는다.
+      responses:
+        '204':
+          description: 멤버십 삭제 완료
+        '403':
+          $ref: '#/components/responses/OwnerRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: OWNER 이전 필요
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: OWNER_TRANSFER_REQUIRED
+                message: 소유자를 이 API로 내보낼 수 없습니다.
+                details: {}
+        default:
+          $ref: '#/components/responses/ApiError'
+  /households/{householdId}/invitations:
+    parameters:
+      - $ref: '#/components/parameters/HouseholdId'
+    post:
+      tags: [Invitation]
+      operationId: createInvitation
+      summary: 초대 발급
+      description: OWNER 전용. 원문 token은 생성 응답에서만 돌려준다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInvitationRequest'
+            example:
+              maxUses: 3
+              expiresInHours: 24
+      responses:
+        '201':
+          description: 새 초대
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvitationCreated'
+        '403':
+          $ref: '#/components/responses/OwnerRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        default:
+          $ref: '#/components/responses/ApiError'
+  /households/{householdId}/invitations/{invitationId}:
+    parameters:
+      - $ref: '#/components/parameters/HouseholdId'
+      - $ref: '#/components/parameters/InvitationId'
+    delete:
+      tags: [Invitation]
+      operationId: revokeInvitation
+      summary: 초대 취소
+      description: OWNER 전용. 이미 취소된 초대도 204로 처리한다.
+      responses:
+        '204':
+          description: 취소 완료
+        '403':
+          $ref: '#/components/responses/OwnerRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        default:
+          $ref: '#/components/responses/ApiError'
+  /invitations/{token}:
+    parameters:
+      - $ref: '#/components/parameters/InvitationToken'
+    get:
+      tags: [Invitation]
+      operationId: previewInvitation
+      summary: 초대 미리보기
+      description: 공간 이름만 공개한다. 토큰은 로그에서 가린다.
+      security: []
+      responses:
+        '200':
+          description: 수락 가능한 초대
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvitationPreview'
+        '404':
+          $ref: '#/components/responses/InvitationNotFound'
+        '410':
+          $ref: '#/components/responses/InvitationUnavailable'
+        default:
+          $ref: '#/components/responses/ApiError'
+  /invitations/{token}/accept:
+    parameters:
+      - $ref: '#/components/parameters/InvitationToken'
+    post:
+      tags: [Invitation]
+      operationId: acceptInvitation
+      summary: 초대 수락
+      description: 유효한 초대에 대해 같은 사용자의 재시도는 200이며 횟수를 다시 차감하지 않는다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptInvitationRequest'
+            example:
+              nickname: 동생
+      responses:
+        '200':
+          description: 이미 가입한 멤버십 반환
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+        '201':
+          description: 새 멤버십 생성
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+        '404':
+          $ref: '#/components/responses/InvitationNotFound'
+        '410':
+          $ref: '#/components/responses/InvitationUnavailable'
+        default:
+          $ref: '#/components/responses/ApiError'
+  /households/{householdId}/items:
+    parameters:
+      - $ref: '#/components/parameters/HouseholdId'
+    get:
+      tags: [Item]
+      operationId: listItems
+      summary: 공간 물품 목록
+      responses:
+        '200':
+          description: 물품 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Item'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        default:
+          $ref: '#/components/responses/ApiError'
+    post:
+      tags: [Item]
+      operationId: createItem
+      summary: 물품 추가
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateItemRequest'
+            example:
+              name: 치약
+              category: TOILETRIES
+              unit: 개
+              quantity: 2
+              lowStockThreshold: 1
+      responses:
+        '201':
+          description: 생성된 물품
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        default:
+          $ref: '#/components/responses/ApiError'
+  /households/{householdId}/items/{itemId}:
+    parameters:
+      - $ref: '#/components/parameters/HouseholdId'
+      - $ref: '#/components/parameters/ItemId'
+    patch:
+      tags: [Item]
+      operationId: updateItem
+      summary: 물품 정보와 부족 기준 변경
+      description: quantity는 여기서 변경할 수 없다. 현재 상태가 부족 아님에서 부족으로 바뀌면 이벤트를 만든다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateItemRequest'
+            example:
+              expectedVersion: 0
+              lowStockThreshold: 2
+      responses:
+        '200':
+          description: 변경된 물품
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/VersionConflict'
+        default:
+          $ref: '#/components/responses/ApiError'
+  /households/{householdId}/items/{itemId}/stock-changes:
+    parameters:
+      - $ref: '#/components/parameters/HouseholdId'
+      - $ref: '#/components/parameters/ItemId'
+    get:
+      tags: [Item]
+      operationId: listStockChanges
+      summary: 최신 수량 변경 이력
+      description: 최신순 최대 50건. 페이지네이션은 후속 계약에서 결정한다.
+      responses:
+        '200':
+          description: 수량 변경 이력
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [stockChanges]
+                properties:
+                  stockChanges:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StockChange'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        default:
+          $ref: '#/components/responses/ApiError'
+    post:
+      tags: [Item]
+      operationId: changeStock
+      summary: 수량 변경
+      description: expectedVersion 일치 시 물품 갱신과 이력 저장을 한 트랜잭션에서 처리한다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeStockRequest'
+            example:
+              expectedVersion: 0
+              newQuantity: 1
+      responses:
+        '200':
+          description: 변경된 물품과 기록
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangeStockResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/VersionConflict'
+        default:
+          $ref: '#/components/responses/ApiError'
+  /households/{householdId}/alert-preference:
+    parameters:
+      - $ref: '#/components/parameters/HouseholdId'
+    get:
+      tags: [Alert]
+      operationId: getAlertPreference
+      summary: 내 부족 알림 신청 상태
+      responses:
+        '200':
+          description: 현재 설정
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertPreference'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        default:
+          $ref: '#/components/responses/ApiError'
+    put:
+      tags: [Alert]
+      operationId: putAlertPreference
+      summary: 내 부족 알림 신청 상태 설정
+      description: 신청 상태만 관리한다. 실제 푸시 발송에는 별도 토스 동의와 문구 승인이 필요하다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutAlertPreferenceRequest'
+            example:
+              enabled: true
+      responses:
+        '200':
+          description: 저장된 설정
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertPreference'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        default:
+          $ref: '#/components/responses/ApiError'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 서버가 발급한 단기 API 토큰. 멤버십은 매 요청 DB에서 확인.
+  parameters:
+    HouseholdId:
+      name: householdId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ItemId:
+      name: itemId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    InvitationId:
+      name: invitationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    InvitationToken:
+      name: token
+      in: path
+      required: true
+      description: 추측하기 어려운 초대 토큰. 접근 로그에서 가릴 것.
+      schema:
+        type: string
+        minLength: 32
+  responses:
+    ApiError:
+      description: 오류. HTTP 상태와 code를 함께 확인한다.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: 리소스가 없거나 현재 사용자가 접근할 수 없음
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: NOT_FOUND
+            message: 찾을 수 없습니다.
+            details: {}
+    OwnerRequired:
+      description: OWNER 역할 필요
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: OWNER_REQUIRED
+            message: 소유자만 사용할 수 있습니다.
+            details: {}
+    InvitationNotFound:
+      description: 초대를 찾을 수 없음
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: INVITATION_NOT_FOUND
+            message: 초대를 찾을 수 없습니다.
+            details: {}
+    InvitationUnavailable:
+      description: 초대 만료·취소·사용 횟수 소진
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: INVITATION_UNAVAILABLE
+            message: 사용할 수 없는 초대입니다.
+            details: {}
+    TossAuthFailed:
+      description: 인가 코드 검증 또는 교환 실패
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: TOSS_AUTH_FAILED
+            message: 새 로그인 인가 코드가 필요합니다.
+            details: {}
+    VersionConflict:
+      description: 예상 버전 불일치. 최신 물품 상태 반환.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: VERSION_CONFLICT
+            message: 다른 가족이 먼저 물품을 변경했습니다.
+            details:
+              currentItem:
+                id: 84e151db-ad1b-459f-8a5a-4b36478721ab
+                householdId: 875a314c-53c0-40b5-88f0-f38c6fa8281f
+                name: 치약
+                category: TOILETRIES
+                unit: 개
+                quantity: 1
+                lowStockThreshold: 1
+                lowStock: true
+                version: 1
+  schemas:
+    Error:
+      type: object
+      required: [code, message, details]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+    TossExchangeRequest:
+      type: object
+      required: [code]
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          minLength: 1
+    AuthResponse:
+      type: object
+      required: [accessToken, tokenType, expiresInSeconds, user]
+      properties:
+        accessToken:
+          type: string
+        tokenType:
+          type: string
+          enum: [Bearer]
+        expiresInSeconds:
+          type: integer
+          format: int32
+          example: 3600
+        user:
+          $ref: '#/components/schemas/User'
+    User:
+      type: object
+      required: [id, status, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE]
+        createdAt:
+          type: string
+          format: date-time
+    MeResponse:
+      type: object
+      required: [user, households]
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        households:
+          type: array
+          items:
+            $ref: '#/components/schemas/HouseholdSummary'
+    HouseholdSummary:
+      type: object
+      required: [id, name, myRole]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        myRole:
+          $ref: '#/components/schemas/HouseholdRole'
+    HouseholdRole:
+      type: string
+      enum: [OWNER, MEMBER]
+    CreateHouseholdRequest:
+      type: object
+      required: [name, nickname]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        nickname:
+          type: string
+          minLength: 1
+          maxLength: 20
+          description: 이 공간에서 쓸 내 이름
+    UpdateHouseholdRequest:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+    NicknameRequest:
+      type: object
+      required: [nickname]
+      additionalProperties: false
+      properties:
+        nickname:
+          type: string
+          minLength: 1
+          maxLength: 20
+    AcceptInvitationRequest:
+      type: object
+      required: [nickname]
+      additionalProperties: false
+      properties:
+        nickname:
+          type: string
+          minLength: 1
+          maxLength: 20
+          description: 이 공간에서 쓸 내 이름. 이미 멤버인 경우 무시한다.
+    TransferOwnershipRequest:
+      type: object
+      required: [newOwnerUserId]
+      additionalProperties: false
+      properties:
+        newOwnerUserId:
+          type: string
+          format: uuid
+    HouseholdDetail:
+      type: object
+      required: [id, name, myRole, myNickname, members, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        myRole:
+          $ref: '#/components/schemas/HouseholdRole'
+        myNickname:
+          type: string
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/Membership'
+        createdAt:
+          type: string
+          format: date-time
+    Membership:
+      type: object
+      required: [householdId, userId, nickname, role, joinedAt]
+      properties:
+        householdId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        nickname:
+          type: string
+        role:
+          $ref: '#/components/schemas/HouseholdRole'
+        joinedAt:
+          type: string
+          format: date-time
+    CreateInvitationRequest:
+      type: object
+      required: [maxUses, expiresInHours]
+      additionalProperties: false
+      properties:
+        maxUses:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 10
+        expiresInHours:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 168
+    InvitationCreated:
+      type: object
+      required: [id, token, householdId, expiresAt, maxUses, usedCount]
+      properties:
+        id:
+          type: string
+          format: uuid
+        token:
+          type: string
+          description: 초대 생성 시에만 반환하는 원문 토큰
+        householdId:
+          type: string
+          format: uuid
+        expiresAt:
+          type: string
+          format: date-time
+        maxUses:
+          type: integer
+        usedCount:
+          type: integer
+          example: 0
+    InvitationPreview:
+      type: object
+      required: [householdName, expiresAt, remainingUses]
+      properties:
+        householdName:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        remainingUses:
+          type: integer
+    CreateItemRequest:
+      type: object
+      required: [name, category, unit, quantity, lowStockThreshold]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        category:
+          $ref: '#/components/schemas/ItemCategory'
+        unit:
+          type: string
+          minLength: 1
+          maxLength: 20
+          description: 수량 뒤에 붙는 말(개, 롤 등). 숫자는 쓸 수 없다(400 VALIDATION_ERROR, details.unit).
+        quantity:
+          type: integer
+          format: int32
+          minimum: 0
+        lowStockThreshold:
+          type: integer
+          format: int32
+          minimum: 0
+    UpdateItemRequest:
+      type: object
+      required: [expectedVersion]
+      additionalProperties: false
+      minProperties: 2
+      description: expectedVersion 외 필드를 하나 이상 포함한다.
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        category:
+          $ref: '#/components/schemas/ItemCategory'
+        unit:
+          type: string
+          minLength: 1
+          maxLength: 20
+          description: 수량 뒤에 붙는 말(개, 롤 등). 숫자는 쓸 수 없다(400 VALIDATION_ERROR, details.unit).
+        lowStockThreshold:
+          type: integer
+          format: int32
+          minimum: 0
+    ItemCategory:
+      type: string
+      enum: [TOILETRIES, CLEANING, LAUNDRY, KITCHEN, OTHER]
+      description: 아이콘 선택용 고정 카테고리
+    Item:
+      type: object
+      required: [id, householdId, name, category, unit, quantity, lowStockThreshold, lowStock, version]
+      properties:
+        id:
+          type: string
+          format: uuid
+        householdId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        category:
+          $ref: '#/components/schemas/ItemCategory'
+        unit:
+          type: string
+        quantity:
+          type: integer
+          format: int32
+          minimum: 0
+        lowStockThreshold:
+          type: integer
+          format: int32
+          minimum: 0
+        lowStock:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+    ChangeStockRequest:
+      type: object
+      required: [expectedVersion, newQuantity]
+      additionalProperties: false
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        newQuantity:
+          type: integer
+          format: int32
+          minimum: 0
+    ChangeStockResponse:
+      type: object
+      required: [item, stockChange]
+      properties:
+        item:
+          $ref: '#/components/schemas/Item'
+        stockChange:
+          $ref: '#/components/schemas/StockChange'
+    StockChange:
+      type: object
+      required: [id, itemId, actorUserId, actorNickname, beforeQuantity, afterQuantity, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        itemId:
+          type: string
+          format: uuid
+        actorUserId:
+          type: string
+          format: uuid
+        actorNickname:
+          type: string
+          description: 변경한 시점의 닉네임. 이후 이름을 바꾸거나 공간을 나가도 유지된다.
+        beforeQuantity:
+          type: integer
+          minimum: 0
+        afterQuantity:
+          type: integer
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+    PutAlertPreferenceRequest:
+      type: object
+      required: [enabled]
+      additionalProperties: false
+      properties:
+        enabled:
+          type: boolean
+    AlertPreference:
+      type: object
+      required: [householdId, enabled]
+      properties:
+        householdId:
+          type: string
+          format: uuid
+        enabled:
+          type: boolean
