@@ -35,3 +35,25 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### 운영 정보 (절대 올리지 않는다) ###
+# 환경변수: 실제 값은 .env 에만 두고, 자리표시자만 있는 .env.example 은 올린다
+.env
+.env.*
+!.env.example
+# mTLS 인증서·키, 서명 키, 키스토어
+certs/
+*.key
+*.crt
+*.pem
+*.p12
+*.pfx
+*.jks
+# 앱 번들(빌드 산출물, 서버 주소가 박혀 있다)
+*.ait
+# 도구 로그·상태 (토큰이 섞일 수 있다)
+.postman/
+.tailscale*/
+*.log
+.DS_Store
+.claude/
