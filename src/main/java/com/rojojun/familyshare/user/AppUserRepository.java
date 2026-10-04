@@ -6,5 +6,5 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface AppUserRepository extends JpaRepository<AppUserModel, UUID> {
-    Optional<AppUserModel> findByTossUserKey(Long tossUserKey);
+    Optional<AppUserModel> findByAnonKey(String anonKey);
 }

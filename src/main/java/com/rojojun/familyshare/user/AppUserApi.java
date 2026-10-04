@@ -1,9 +1,10 @@
 package com.rojojun.familyshare.user;
 
+import com.rojojun.familyshare.common.CustomPrincipal;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-@RequestMapping("/user")
 @RestController
 public class AppUserApi {
 
@@ -13,15 +14,9 @@ public class AppUserApi {
         this.appUserService = appUserService;
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<AppUserDto.Response> register(Long tossUserKey) {
-        var result = appUserService.register(tossUserKey);
-        return ResponseEntity.ok(result);
-    }
-
-    @GetMapping("/{tossUserKey}")
-    public ResponseEntity<AppUserDto.Response> get(@PathVariable Long tossUserKey) {
-        var result = appUserService.get(tossUserKey);
-        return ResponseEntity.ok(result);
+    @GetMapping("/me")
+    public ResponseEntity<AppUserDto.MyInformationDto> getMyInformation(@AuthenticationPrincipal CustomPrincipal customPrincipal) {
+        var response = appUserService.getMyInformation(customPrincipal.userId());
+        return ResponseEntity.ok(response);
     }
 }

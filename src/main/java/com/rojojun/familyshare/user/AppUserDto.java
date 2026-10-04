@@ -1,17 +1,26 @@
 package com.rojojun.familyshare.user;
 
-import java.time.LocalDateTime;
+import com.rojojun.familyshare.household.HouseholdMemberRole;
+
+import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public class AppUserDto {
-    public record Response(
+    public record MyInformationDto(
+            User user,
+            List<HouseholdSummary> households
+    ) { }
+
+    public record User(
             UUID id,
-            Long tossUserKey,
             AppUserStatus appUserStatus,
-            LocalDateTime createdAt
-    ) {
-        Response(AppUserModel appUserModel) {
-            this(appUserModel.getId(), appUserModel.getTossUserKey(), appUserModel.getStatus(), appUserModel.getCreatedAt());
-        }
-    }
+            OffsetDateTime createdAt
+    ) {}
+
+    public record HouseholdSummary(
+            UUID id,
+            String name,
+            HouseholdMemberRole myRole
+    ) {}
 }
