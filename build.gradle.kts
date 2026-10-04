@@ -1,3 +1,16 @@
+// Gradle 플러그인(빌드 도구)이 끌어오는 라이브러리의 알려진 취약점을 피하기 위해 버전을 올린다.
+// 서버에 배포되는 jar와는 무관하며, 아래 extra 설정과 별개로 빌드 시점에만 쓰인다.
+buildscript {
+    repositories { mavenCentral() }
+    dependencies {
+        constraints {
+            classpath("tools.jackson.core:jackson-core:3.1.7")
+            classpath("tools.jackson.core:jackson-databind:3.1.7")
+            classpath("org.apache.commons:commons-lang3:3.20.0")
+        }
+    }
+}
+
 plugins {
     java
     id("org.springframework.boot") version "4.1.1"
