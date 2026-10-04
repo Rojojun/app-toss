@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>살림잇다 · 화면 와이어프레임 v0.2</title>
+<style>
+  :root {
+    --blue: #3182f6; --blue-weak: #e8f3ff; --blue-deep: #1b64da;
+    --red: #f04452; --red-weak: #ffeeee;
+    --amber: #ff9f00; --amber-weak: #fff3e0;
+    --ink: #191f28; --ink2: #4e5968; --ink3: #8b95a1; --ink4: #b0b8c1;
+    --line: #e5e8ec; --bg: #f2f4f6; --card: #ffffff;
+    --sans: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #e9ecef; color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+  header.page { padding: 36px 48px 8px; }
+  header.page h1 { margin: 0 0 6px; font-size: 26px; letter-spacing: -0.02em; }
+  header.page p { margin: 0; color: var(--ink2); font-size: 14px; line-height: 1.6; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; padding: 14px 48px 4px; font-size: 12px; color: var(--ink2); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 1px solid var(--line); padding: 4px 10px; border-radius: 999px; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  section.flow { padding: 28px 48px 8px; }
+  section.flow > h2 { margin: 0 0 4px; font-size: 18px; letter-spacing: -0.01em; }
+  section.flow > .sub { margin: 0 0 18px; font-size: 13px; color: var(--ink2); }
+  .row { display: flex; align-items: flex-start; gap: 18px; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 18px; }
+  .arrow { align-self: center; color: var(--ink3); font-size: 22px; margin-top: -90px; flex: none; }
+
+  .cell { flex: none; width: 340px; }
+  .cap { margin-top: 12px; font-size: 12px; line-height: 1.55; color: var(--ink2); }
+  .cap b { color: var(--ink); font-size: 13px; }
+  .cap code, .tag { font-family: var(--mono); font-size: 11px; background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; color: var(--ink2); white-space: nowrap; }
+  .tag.api { color: #0b5cd6; background: var(--blue-weak); border-color: #cfe4ff; }
+  .tag.warn { color: #b25e00; background: var(--amber-weak); border-color: #ffd9a1; }
+  .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+
+  /* phone */
+  .phone { position: relative; width: 340px; height: 690px; background: #fff; border: 1.5px solid #cfd4da; border-radius: 30px; overflow: hidden; box-shadow: 0 10px 30px rgba(25,31,40,.10); display: flex; flex-direction: column; }
+  .sys { height: 46px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 14px 0 12px; border-bottom: 1px solid var(--line); background: #fff; }
+  .sys .brand { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+  .sys .logo { width: 22px; height: 22px; border-radius: 6px; background: url(icons/logo.svg) center / cover; }
+  .sys .pill { display: flex; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; color: var(--ink3); font-size: 13px; letter-spacing: 2px; }
+  .sysnote { position: absolute; top: 46px; right: 8px; font-size: 9px; color: var(--ink4); font-family: var(--mono); }
+  .body { flex: 1; overflow: hidden; position: relative; background: #fff; }
+  .scroll { padding: 0 0 100px; }
+  .gray { background: var(--bg); }
+
+  /* TDS-like parts */
+  .top { padding: 18px 20px 10px; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .top h3 { margin: 0; font-size: 24px; line-height: 1.3; letter-spacing: -0.03em; font-weight: 700; }
+  .top .menu { display: inline-flex; align-items: center; gap: 6px; }
+  .top .menu::after { content: "▾"; font-size: 14px; color: var(--ink3); }
+  .top .sub { margin-top: 4px; font-size: 14px; color: var(--ink2); font-weight: 400; letter-spacing: -0.01em; }
+  .iconbtn { width: 36px; height: 36px; border-radius: 12px; background: var(--bg); display: grid; place-items: center; color: var(--ink2); font-size: 15px; position: relative; flex: none; }
+  .iconbtn .dot { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; border-radius: 9px; background: var(--blue); color: #fff; font-size: 10px; display: grid; place-items: center; padding: 0 4px; font-weight: 700; }
+
+  .badge { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 6px; font-size: 11px; font-weight: 600; letter-spacing: -0.01em; vertical-align: middle; }
+  .badge.red { background: var(--red-weak); color: var(--red); }
+  .badge.blue { background: var(--blue-weak); color: var(--blue-deep); }
+  .badge.gray { background: var(--bg); color: var(--ink2); }
+  .badge.fill { background: var(--blue); color: #fff; }
+
+  .lr { display: flex; align-items: center; gap: 12px; padding: 12px 20px; }
+  .lr .left { flex: none; }
+  .lr .mid { flex: 1; min-width: 0; }
+  .lr .t { font-size: 16px; font-weight: 600; letter-spacing: -0.02em; display: flex; align-items: center; gap: 6px; }
+  .lr .s { font-size: 13px; color: var(--ink3); margin-top: 2px; letter-spacing: -0.01em; }
+  .lr .right { flex: none; display: flex; align-items: center; gap: 8px; color: var(--ink3); }
+  .lr.sep { border-bottom: 1px solid #f2f4f6; }
+  .chev::after { content: "›"; font-size: 20px; color: var(--ink4); }
+
+  .cat { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; flex: none; }
+  .cat svg { width: 22px; height: 22px; }
+  .cat.c1 { background: #e8f3ff; } .cat.c2 { background: #e9f9ee; } .cat.c3 { background: #f3ecff; } .cat.c4 { background: #fff3e0; } .cat.c5 { background: #f2f4f6; }
+
+  .spin { display: inline-flex; align-items: center; background: var(--bg); border-radius: 10px; height: 32px; }
+  .spin b { width: 30px; text-align: center; font-size: 17px; color: var(--ink2); font-weight: 500; }
+  .spin span { min-width: 22px; text-align: center; font-size: 15px; font-weight: 700; color: var(--ink); }
+  .spin.lg { height: 52px; border-radius: 14px; }
+  .spin.lg b { width: 56px; font-size: 24px; } .spin.lg span { min-width: 56px; font-size: 22px; }
+
+  .tf { margin: 0 20px 16px; }
+  .tf label { display: block; font-size: 13px; color: var(--ink2); margin-bottom: 6px; letter-spacing: -0.01em; }
+  .tf .box { border: 1.5px solid var(--line); border-radius: 12px; padding: 13px 14px; font-size: 16px; background: #fff; display: flex; align-items: center; justify-content: space-between; }
+  .tf .box.focus { border-color: var(--blue); }
+  .tf .help { font-size: 12px; color: var(--ink3); margin-top: 6px; }
+  .tf .caret { display: inline-block; width: 1.5px; height: 18px; background: var(--blue); margin-left: 1px; vertical-align: middle; }
+
+  .seg { display: flex; background: var(--bg); border-radius: 12px; padding: 3px; gap: 2px; }
+  .seg i { flex: 1; text-align: center; font-style: normal; padding: 8px 0; font-size: 14px; color: var(--ink2); border-radius: 10px; }
+  .seg i.on { background: #fff; color: var(--ink); font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,.10); }
+
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chips i { font-style: normal; font-size: 14px; padding: 8px 14px; border-radius: 999px; background: var(--bg); color: var(--ink2); }
+  .chips i.on { background: var(--blue); color: #fff; font-weight: 600; }
+
+  .tabs { display: flex; gap: 18px; padding: 0 20px; border-bottom: 1px solid var(--line); }
+  .tabs i { font-style: normal; padding: 10px 0; font-size: 15px; color: var(--ink3); font-weight: 600; }
+  .tabs i.on { color: var(--ink); border-bottom: 2px solid var(--ink); margin-bottom: -1px; }
+
+  .cta { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 20px 22px; background: linear-gradient(rgba(255,255,255,0), #fff 28%); display: flex; flex-direction: column; gap: 8px; }
+  .btn { height: 52px; border-radius: 14px; display: grid; place-items: center; font-size: 16px; font-weight: 700; background: var(--blue); color: #fff; letter-spacing: -0.01em; }
+  .btn.weak { background: var(--blue-weak); color: var(--blue-deep); }
+  .btn.gray { background: var(--bg); color: var(--ink2); }
+  .btn.sm { height: 40px; font-size: 14px; border-radius: 12px; }
+  .textbtn { text-align: center; font-size: 14px; color: var(--ink3); padding: 6px; }
+  .textbtn.red { color: var(--red); }
+
+  .summary { margin: 4px 20px 14px; background: var(--blue-weak); border-radius: 18px; padding: 16px 18px; display: flex; justify-content: space-between; align-items: center; }
+  .summary .big { font-size: 20px; font-weight: 700; letter-spacing: -0.03em; color: var(--blue-deep); }
+  .summary .small { font-size: 13px; color: var(--ink2); margin-top: 2px; }
+
+  .result { text-align: center; padding: 70px 28px 0; }
+  .result .fig { width: 112px; height: 112px; margin: 0 auto 22px; border-radius: 25px; background: url(icons/logo.svg) center / cover; box-shadow: 0 8px 22px rgba(27,107,239,.28); }
+  .result h3 { margin: 0 0 8px; font-size: 22px; line-height: 1.35; letter-spacing: -0.03em; }
+  .result p { margin: 0; color: var(--ink2); font-size: 15px; line-height: 1.55; }
+
+  .sk { background: linear-gradient(90deg, #eef0f3, #f6f7f9, #eef0f3); border-radius: 8px; }
+
+  .dim { position: absolute; inset: 0; background: rgba(25,31,40,.45); }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 24px 24px 0 0; padding: 14px 20px 24px; box-shadow: 0 -8px 30px rgba(0,0,0,.12); }
+  .sheet .grab { width: 36px; height: 4px; border-radius: 2px; background: #d1d6db; margin: 0 auto 14px; }
+  .sheet h4 { margin: 0 0 4px; font-size: 20px; letter-spacing: -0.03em; }
+  .sheet .d { font-size: 13px; color: var(--ink2); margin-bottom: 16px; }
+  .sheet .lbl { font-size: 13px; color: var(--ink2); margin: 14px 0 6px; }
+  .linkbox { background: var(--bg); border-radius: 12px; padding: 12px 14px; font-family: var(--mono); font-size: 11.5px; color: var(--ink2); word-break: break-all; line-height: 1.5; }
+
+  .toast { position: absolute; left: 16px; right: 16px; bottom: 96px; background: rgba(25,31,40,.92); color: #fff; border-radius: 14px; padding: 14px 16px; font-size: 14px; display: flex; justify-content: space-between; gap: 10px; align-items: center; line-height: 1.45; }
+  .toast u { text-decoration: none; color: #6aa9ff; font-weight: 700; white-space: nowrap; }
+
+  .dialog { position: absolute; left: 24px; right: 24px; top: 50%; transform: translateY(-50%); background: #fff; border-radius: 22px; padding: 26px 22px 16px; }
+  .dialog h4 { margin: 0 0 8px; font-size: 19px; line-height: 1.4; letter-spacing: -0.03em; }
+  .dialog p { margin: 0 0 20px; font-size: 14px; color: var(--ink2); line-height: 1.55; }
+  .dialog .acts { display: flex; gap: 8px; }
+  .dialog .acts .btn { flex: 1; height: 46px; font-size: 15px; }
+  .btn.danger { background: var(--red); color: #fff; }
+
+  .hl { background: #fffbe6; }
+  .sechead { padding: 18px 20px 6px; font-size: 13px; font-weight: 600; color: var(--ink3); }
+
+  /* notes */
+  .notes { margin: 8px 48px 40px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .note { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px; font-size: 13px; line-height: 1.65; color: var(--ink2); }
+  .note h4 { margin: 0 0 8px; font-size: 15px; color: var(--ink); }
+  .note ul { margin: 0; padding-left: 18px; }
+  .note.warn { background: var(--amber-weak); border-color: #ffd9a1; }
+  /* 알림 */
+  .lock { flex: 1; background: linear-gradient(#3b4f7a, #1b2336 70%); color: #fff; padding: 56px 16px 0; display: flex; flex-direction: column; gap: 10px; }
+  .lock .clock { text-align: center; font-size: 56px; font-weight: 300; letter-spacing: -0.03em; line-height: 1.1; }
+  .lock .date { text-align: center; font-size: 14px; opacity: .8; margin-bottom: 26px; }
+  .notif { background: rgba(255,255,255,.94); color: var(--ink); border-radius: 18px; padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start; box-shadow: 0 6px 20px rgba(0,0,0,.25); }
+  .notif .ico { width: 36px; height: 36px; border-radius: 9px; background: url(icons/logo.svg) center / cover; flex: none; }
+  .notif .tx { flex: 1; min-width: 0; }
+  .notif .app { font-size: 11px; color: var(--ink3); display: flex; justify-content: space-between; }
+  .notif .tt { font-size: 14px; font-weight: 700; margin-top: 2px; }
+  .notif .bd { font-size: 14px; color: var(--ink2); margin-top: 1px; }
+  .tl { margin: 4px 0; padding: 0; list-style: none; }
+  .tl li { position: relative; padding: 0 0 18px 26px; font-size: 13px; line-height: 1.5; color: var(--ink2); }
+  .tl li::before { content: ""; position: absolute; left: 4px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: var(--blue); }
+  .tl li::after { content: ""; position: absolute; left: 8.5px; top: 18px; bottom: 0; width: 1.5px; background: var(--line); }
+  .tl li:last-child::after { display: none; }
+  .tl li b { color: var(--ink); }
+  .tl li.end::before { background: #12a150; }
+  .tl li.stop::before { background: var(--ink3); }
+  .tpl { margin: 0 20px 14px; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; background: #fff; }
+  .tpl .k { font-size: 11px; color: var(--ink3); }
+  .tpl .v { font-size: 15px; font-weight: 700; margin-top: 2px; }
+  .tpl .v.body { font-weight: 500; }
+  .tpl .n { font-size: 11px; color: var(--ink3); margin-top: 2px; }
+  .flowmap { margin: 6px 48px 8px; background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 18px 22px; font-family: var(--mono); font-size: 12.5px; line-height: 1.9; color: var(--ink2); }
+  .flowmap b { color: var(--blue-deep); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-bath" viewBox="0 0 24 24"><path d="M12 3.5c3 3.8 5.5 6.6 5.5 10a5.5 5.5 0 0 1-11 0c0-3.4 2.5-6.2 5.5-10z" fill="#3182f6"/></symbol>
+    <symbol id="i-clean" viewBox="0 0 24 24"><path d="M12 3l2.1 6.9L21 12l-6.9 2.1L12 21l-2.1-6.9L3 12l6.9-2.1z" fill="#1fbf5b"/></symbol>
+    <symbol id="i-wash" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#8a4dff" stroke-width="3"/><path d="M7.5 13c1.5-2 3-2 4.5 0s3 2 4.5 0" fill="none" stroke="#8a4dff" stroke-width="2.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-kitchen" viewBox="0 0 24 24"><path d="M4 11h16a8 8 0 0 1-16 0z" fill="#ff9f00"/><rect x="9" y="5" width="6" height="3" rx="1.5" fill="#ff9f00"/></symbol>
+    <symbol id="i-etc" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="2.4" fill="#8b95a1"/><circle cx="12" cy="12" r="2.4" fill="#8b95a1"/><circle cx="18.5" cy="12" r="2.4" fill="#8b95a1"/></symbol>
+    <symbol id="i-mark" viewBox="0 0 24 24"><path d="M4.5 11.2 12 4.5l7.5 6.7" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 10.5V19h4M17 10.5V19h-4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<header class="page">
+  <h1><img src="icons/logo.svg" alt="" style="width:34px;height:34px;border-radius:8px;vertical-align:-8px;margin-right:10px">살림잇다 · 화면 와이어프레임 v0.2</h1>
+  <p>토스 앱 안에서 실행되는 미니앱 화면입니다. <b>React + TDS(@toss/tds-mobile)</b> 컴포넌트 기준이고, 각 화면 아래에 쓰는 컴포넌트와 호출하는 서버 API를 적었습니다.<br>
+  실제 앱에서는 위쪽 내비게이션 바(앱 이름, ⋯, ✕)를 토스가 그려 주므로 우리가 만들지 않습니다. 라이트 모드 기준이며 다크 모드는 TDS 색 토큰이 자동 대응합니다.</p>
+</header>
+<div class="legend">
+  <span><i style="background:#3182f6"></i>주요 행동(파란색 하나만 강조)</span>
+  <span><i style="background:#f04452"></i>부족·위험</span>
+  <span><i style="background:#e8f3ff;border:1px solid #cfe4ff"></i>연한 강조</span>
+  <span><span class="tag api" style="border:0;padding:0 4px">GET /me</span> 호출하는 API</span>
+  <span><span class="tag warn" style="border:0;padding:0 4px">API 추가 필요</span> 지금 서버에 없는 것</span>
+</div>
+
+<div class="flowmap">
+  <b>진입</b> 앱 열기 → 자동 식별키 교환(<code>POST /auth/toss/exchange</code>) → <code>GET /me</code><br>
+  &nbsp;&nbsp;├ 공간 없음 → <b>1 시작</b> → <b>2 공간 만들기</b> → <b>3 홈</b><br>
+  &nbsp;&nbsp;├ 공간 있음 → <b>3 홈</b> ↔ <b>4 물품 상세</b> ↔ <b>5 물품 추가·수정</b><br>
+  &nbsp;&nbsp;└ 초대 링크로 진입(<code>intoss://salim-link/invite?token=…</code>) → <b>9 초대 수락</b> 또는 <b>10 초대 불가</b><br>
+  <b>알림</b> 물품이 0이 된 채 3시간이 지나면 다른 멤버에게 푸시 → 탭하면 <b>12-b 물품 상세</b> → <b>사러 가기</b><br>
+  <b>홈</b> 상단 멤버 버튼 → <b>7 멤버</b> → <b>8 초대 링크 만들기</b> / 소유권 넘기기 · 내보내기 · 나가기 · 해산(확인 다이얼로그 11)
+</div>
+
+<!-- ============ A. 처음 열기 ============ -->
+<section class="flow">
+  <h2>A. 처음 열기 (공간이 없을 때)</h2>
+  <p class="sub">로그인 화면과 약관 동의 화면이 없습니다. 열자마자 식별이 끝나고 바로 할 일이 보입니다.</p>
+  <div class="row">
+
+    <div class="cell">
+      <div class="phone"><div class="sys"><div class="brand"><div class="logo"></div>살림잇다</div><div class="pill"><span>···</span><span>✕</span></div></div>
+        <div class="body">
+          <div class="top"><div style="width:100%"><div class="sk" style="width:46%;height:28px"></div><div class="sk" style="width:70%;height:14px;margin-top:12px"></div></div></div>
+          <div style="padding:14px 20px"><div class="sk" style="height:78px;border-radius:18px"></div></div>
+          <div class="lr"><div class="sk" style="width:40px;height:40px;border-radius:12px"></div><div style="flex:1"><div class="sk" style="width:50%;height:15px"></div><div class="sk" style="width:35%;height:12px;margin-top:8px"></div></div></div>
+          <div class="lr"><div class="sk" style="width:40px;height:40px;border-radius:12px"></div><div style="flex:1"><div class="sk" style="width:42%;height:15px"></div><div class="sk" style="width:30%;height:12px;margin-top:8px"></div></div></div>
+          <div class="lr"><div class="sk" style="width:40px;height:40px;border-radius:12px"></div><div style="flex:1"><div class="sk" style="width:56%;height:15px"></div><div class="sk" style="width:38%;height:12px;margin-top:8px"></div></div></div>
+        </div></div>
+      <div class="cap"><b>0 로딩</b> 앱을 열면 자동으로 사용자 확인을 끝냅니다.
+        <div class="tags"><span class="tag api">POST /auth/toss/exchange</span><span class="tag api">GET /me</span><span class="tag">Skeleton</span></div></div>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="cell">
+      <div class="phone"><div class="sys"><div class="brand"><div class="logo"></div>살림잇다</div><div class="pill"><span>···</span><span>✕</span></div></div>
+        <div class="body">
+          <div class="result">
+            <div class="fig" role="img" aria-label="살림잇다 앱 아이콘"></div>
+            <h3>함께 쓰는 생필품,<br>남은 수량을 같이 봐요</h3>
+            <p>공간을 만들어 가족이나 룸메이트를 초대하면<br>집에 뭐가 남았는지 모두가 바로 알 수 있어요.</p>
+          </div>
+          <div class="cta"><div class="btn">우리집 공간 만들기</div><div class="textbtn">초대를 받았다면 받은 링크로 다시 열어 주세요</div></div>
+        </div></div>
+      <div class="cap"><b>1 시작</b> 공간이 없는 사용자의 첫 화면. 할 일이 하나(공간 만들기)입니다.
+        <div class="tags"><span class="tag">Result</span><span class="tag">BottomCTA.Single</span><span class="tag">TextButton</span></div></div>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="cell">
+      <div class="phone"><div class="sys"><div class="brand"><div class="logo"></div>살림잇다</div><div class="pill"><span>···</span><span>✕</span></div></div>
+        <div class="body">
+          <div class="top"><div><h3>공간 이름을<br>정해 주세요</h3></div></div>
+          <div style="height:10px"></div>
+          <div class="tf"><label>공간 이름</label><div class="box focus"><span>우리집<i class="caret"></i></span><span style="color:var(--ink4);font-size:13px">3/100</span></div></div>
+          <div class="tf"><label>이 공간에서 쓸 내 이름 <span class="tag warn">API 추가 필요</span></label><div class="box"><span>나</span></div><div class="help">멤버들에게 이 이름으로 보여요. 나중에 바꿀 수 있어요.</div></div>
+          <div class="cta"><div class="btn">만들기</div></div>
+        </div></div>
+      <div class="cap"><b>2 공간 만들기</b> 이름만 받습니다. 만들면 내가 소유자가 됩니다.
+        <div class="tags"><span class="tag api">POST /households</span><span class="tag">Top</span><span class="tag">TextField(box)</span><span class="tag">BottomCTA</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ B. 홈과 물품 ============ -->
+<section class="flow">
+  <h2>B. 홈과 물품 (매일 쓰는 화면)</h2>
+  <p class="sub">마트에서 앱을 열었을 때 "지금 사야 할 것"이 가장 먼저 보여야 합니다. 수량은 목록에서 바로 바꿀 수 있습니다.</p>
+  <div class="row">
+
+    <div class="cell">
+      <div class="phone"><div class="sys"><div class="brand"><div class="logo"></div>살림잇다</div><div class="pill"><span>···</span><span>✕</span></div></div>
+        <div class="body"><div class="scroll">
+          <div class="top"><h3 class="menu">우리집</h3><div class="iconbtn">👥<span class="dot">4</span></div></div>
+          <div class="summary"><div><div class="big">지금 사야 할 것 3개</div><div class="small">전체 물품 12개</div></div></div>
+          <div class="tabs"><i class="on">부족 3</i><i>전체 12</i></div>
+          <div class="lr sep"><div class="cat c1"><svg><use href="#i-bath"/></svg></div><div class="mid"><div class="t">치약 <span class="badge red">부족</span></div><div class="s">부족 기준 2개<span style="color:var(--blue);font-weight:600;margin-left:8px">사러 가기</span></div></div><div class="right"><div class="spin"><b>−</b><span>1</span><b>+</b></div></div></div>
+          <div class="lr sep"><div class="cat c4"><svg><use href="#i-kitchen"/></svg></div><div class="mid"><div class="t">주방세제 <span class="badge red">부족</span></div><div class="s">부족 기준 1개<span style="color:var(--blue);font-weight:600;margin-left:8px">사러 가기</span></div></div><div class="right"><div class="spin"><b>−</b><span>1</span><b>+</b></div></div></div>
+          <div class="lr sep"><div class="cat c3"><svg><use href="#i-wash"/></svg></div><div class="mid"><div class="t">섬유유연제 <span class="badge red">부족</span></div><div class="s">부족 기준 1개<span style="color:var(--blue);font-weight:600;margin-left:8px">사러 가기</span></div></div><div class="right"><div class="spin"><b>−</b><span>0</span><b>+</b></div></div></div>
+          <div class="sechead">여유 있어요</div>
+          <div class="lr sep"><div class="cat c2"><svg><use href="#i-clean"/></svg></div><div class="mid"><div class="t">욕실 세정제</div><div class="s">부족 기준 1개</div></div><div class="right"><div class="spin"><b>−</b><span>3</span><b>+</b></div></div></div>
+        </div>
+          <div class="cta"><div class="btn">+ 물품 추가</div></div>
+        </div></div>
+      <div class="cap"><b>3 홈</b> 기본 탭은 "부족". 제목을 누르면 공간 전환 시트(3-b), 오른쪽 버튼은 멤버 화면. 행을 누르면 상세, 오른쪽 −/+는 바로 수량 변경.
+        <div class="tags"><span class="tag api">GET /me</span><span class="tag api">GET …/items</span><span class="tag api">POST …/stock-changes</span><span class="tag">Top</span><span class="tag">BottomSheet</span><span class="tag">Tab</span><span class="tag">ListRow</span><span class="tag">Badge</span><span class="tag">NumericSpinner</span></div></div>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="cell">
+      <div class="phone"><div class="sys"><div class="brand"><div class="logo"></div>살림잇다</div><div class="pill"><span>···</span><span>✕</span></div></div>
+        <div class="body">
+          <div class="top"><h3 class="menu">우리집 ▾</h3><div class="iconbtn">👥<span class="dot">3</span></div></div>
+          <div style="margin:4px 20px 8px;padding:16px 18px;border-radius:16px;background:var(--blue-weak)"><b style="display:block;font-size:20px;color:var(--blue-deep)">지금 사야 할 것 3개</b><span style="font-size:13px;color:var(--ink2)">전체 물품 5개</span></div>
+          <div class="dim"></div>
+          <div class="sheet"><div class="grab"></div><h4 style="margin-bottom:6px">내 공간</h4><div class="lr" style="padding:15px 0;border-bottom:1px solid #f2f4f6"><div class="mid"><div class="t" style="font-size:16px;font-weight:500">우리집</div></div><div class="right" style="color:var(--blue);font-weight:700">✓</div></div><div class="lr" style="padding:15px 0;border-bottom:1px solid #f2f4f6"><div class="mid"><div class="t" style="font-size:16px;font-weight:500">자취방</div></div></div><div class="lr" style="padding:15px 0"><div class="mid"><div class="t" style="font-size:16px;font-weight:500;color:var(--blue)">+ 새 공간 만들기</div></div></div></div>
+        </div></div>
+      <div class="cap"><b>3-b 공간 전환</b> 홈 제목(우리집 ▾)을 누르면 올라옵니다. 현재 공간에 ✓가 있고, "새 공간 만들기"는 2 화면으로 이어집니다.
+        <div class="tags"><span class="tag api">GET /me</span><span class="tag">BottomSheet</span><span class="tag">ListRow</span></div></div>
+    </div>
+    <div class="arrow">→</div>
+
+
+    <div class="cell">
+      <div class="phone"><div class="sys"><div class="brand"><div class="logo"></div>살림잇다</div><div class="pill"><span>···</span><span>✕</span></div></div>
+        <div class="body"><div class="scroll">
+          <div class="top"><div><h3>치약</h3><div class="sub"><span class="badge gray">욕실</span></div></div><div class="iconbtn">✎</div></div>
+          <div style="text-align:center;padding:14px 20px 4px">
+            <div style="font-size:14px;color:var(--ink2)">지금 남은 수량</div>
+            <div style="font-size:56px;font-weight:800;letter-spacing:-0.04em;line-height:1.15">1<span style="font-size:22px;font-weight:600;color:var(--ink3);margin-left:4px">개</span></div>
+            <div style="margin-top:2px"><span class="badge red">부족</span></div>
+            <div style="margin:16px auto 0;width:200px"><div class="spin lg" style="width:100%;justify-content:space-between"><b>−</b><span>1</span><b>+</b></div></div>
+            <div class="btn weak sm" style="margin:12px auto 0;width:200px">다 썼어요</div>
+            <div class="btn sm" style="margin:8px auto 0;width:200px">치약 사러 가기</div>
+          </div>
+          <div style="margin:18px 20px 6px;border-top:1px solid var(--line);padding-top:6px">
+            <div class="lr" style="padding:8px 0"><div class="mid" style="color:var(--ink2);font-size:14px">부족 기준</div><div class="right" style="color:var(--ink);font-size:14px;font-weight:600">2개</div></div>
+          </div>
+          <div class="sechead">변경 이력</div>
+          <div class="lr sep" style="padding:9px 20px"><div class="mid"><div class="t" style="font-size:14px">엄마</div><div class="s">오늘 14:02</div></div><div class="right" style="color:var(--ink);font-weight:600;font-size:14px">2 → 1</div></div>
+          <div class="lr sep" style="padding:9px 20px"><div class="mid"><div class="t" style="font-size:14px">아빠</div><div class="s">어제 20:15</div></div><div class="right" style="color:var(--ink);font-weight:600;font-size:14px">3 → 2</div></div>
+          <div class="lr" style="padding:9px 20px"><div class="mid"><div class="t" style="font-size:14px">나</div><div class="s">9월 28일</div></div><div class="right" style="color:var(--ink);font-weight:600;font-size:14px">5 → 3</div></div>
+        </div></div></div>
+      <div class="cap"><b>4 물품 상세</b> 큰 숫자로 현재 수량을 보여 주고, "다 썼어요"는 수량을 0으로 바꿉니다. 부족한 물품에는 "사러 가기"가 함께 나옵니다(12-b 참고). 이력은 최근 50건.
+        <div class="tags"><span class="tag api">GET …/stock-changes</span><span class="tag api">POST …/stock-changes</span><span class="tag warn">이름 표시: 닉네임 필요</span><span class="tag">Top</span><span class="tag">NumericSpinner(large)</span><span class="tag">Button(weak)</span><span class="tag">TableRow</span><span class="tag">ListRow</span></div></div>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="cell">
+      <div class="phone"><div class="sys"><div class="brand"><div class="logo"></div>살림잇다</div><div class="pill"><span>···</span><span>✕</span></div></div>
+        <div class="body"><div class="scroll">
+          <div class="top"><div><h3>물품 추가</h3></div></div>
+          <div style="height:8px"></div>
+          <div class="tf"><label>이름</label><div class="box focus"><span>치약<i class="caret"></i></span></div></div>
+          <div class="tf"><label>종류</label><div class="chips"><i class="on">욕실</i><i>청소</i><i>세탁</i><i>주방</i><i>기타</i></div></div>
+          <div class="tf"><label>단위</label><div class="box"><span>개</span></div></div>
+          <div class="lr" style="padding:6px 20px 10px"><div class="mid"><div class="t" style="font-size:15px">지금 수량</div></div><div class="right"><div class="spin"><b>−</b><span>2</span><b>+</b></div></div></div>
+          <div class="lr" style="padding:6px 20px 0"><div class="mid"><div class="t" style="font-size:15px">부족 기준</div><div class="s">이 값 이하가 되면 '부족'으로 표시돼요</div></div><div class="right"><div class="spin"><b>−</b><span>1</span><b>+</b></div></div></div>
+        </div>
+          <div class="cta"><div class="btn">저장</div></div>
+        </div></div>
+      <div class="cap"><b>5 물품 추가·수정</b> 한 화면에 다 넣고, 종류는 칩으로 고릅니다. 수정할 때는 같은 화면에 값이 채워져 열립니다.
+        <div class="tags"><span class="tag api">POST …/items</span><span class="tag api">PATCH …/items/{id}</span><span class="tag">TextField</span><span class="tag">SegmentedControl 또는 칩</span><span class="tag">NumericSpinner</span></div></div>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="cell">
+      <div class="phone"><div class="sys"><div class="brand"><div class="logo"></div>살림잇다</div><div class="pill"><span>···</span><span>✕</span></div></div>
+        <div class="body"><div class="scroll">
+          <div class="top"><h3 class="menu">우리집</h3><div class="iconbtn">👥<span class="dot">4</span></div></div>
+          <div class="summary"><div><div class="big">지금 사야 할 것 2개</div><div class="small">전체 물품 12개</div></div></div>
+          <div class="tabs"><i class="on">부족 2</i><i>전체 12</i></div>
+          <div class="lr sep hl"><div class="cat c1"><svg><use href="#i-bath"/></svg></div><div class="mid"><div class="t">치약 <span class="badge red">부족</span></div><div class="s">부족 기준 2개<span style="color:var(--blue);font-weight:600;margin-left:8px">사러 가기</span></div></div><div class="right"><div class="spin"><b>−</b><span>2</span><b>+</b></div></div></div>
+          <div class="lr sep"><div class="cat c4"><svg><use href="#i-kitchen"/></svg></div><div class="mid"><div class="t">주방세제 <span class="badge red">부족</span></div><div class="s">부족 기준 1개<span style="color:var(--blue);font-weight:600;margin-left:8px">사러 가기</span></div></div><div class="right"><div class="spin"><b>−</b><span>1</span><b>+</b></div></div></div>
+        </div>
+          <div class="toast"><span>방금 엄마가 수량을 바꿨어요.<br>최신 수량 2개로 맞췄어요.</span><u>확인</u></div>
+          <div class="cta"><div class="btn">+ 물품 추가</div></div>
+        </div></div>
+      <div class="cap"><b>6 동시 수정 충돌</b> 다른 멤버가 먼저 바꿨을 때. 조용히 덮어쓰지 않고, 서버가 준 최신 상태로 화면을 갱신한 뒤 알려 줍니다.
+        <div class="tags"><span class="tag api">409 VERSION_CONFLICT</span><span class="tag">details.currentItem 사용</span><span class="tag">useToast</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ C. 멤버와 초대 ============ -->
+<section class="flow">
+  <h2>C. 멤버와 초대</h2>
+  <p class="sub">초대 링크는 만든 직후에만 전체를 볼 수 있습니다(서버에는 해시만 저장). 공유는 토스 공유 링크를 씁니다.</p>
+  <div class="row">
+
+    <div class="cell">
+      <div class="phone"><div class="sys"><div class="brand"><div class="logo"></div>살림잇다</div><div class="pill"><span>···</span><span>✕</span></div></div>
+        <div class="body"><div class="scroll">
+          <div class="top"><div><h3>멤버 4명</h3></div></div>
+          <div class="lr sep"><div class="cat c1" style="border-radius:50%"><span style="font-weight:700;color:var(--blue-deep)">아</span></div><div class="mid"><div class="t">아빠 <span class="badge blue">소유자</span> <span class="badge gray">나</span></div><div class="s">10월 4일 참여</div></div></div>
+          <div class="lr sep"><div class="cat c2" style="border-radius:50%"><span style="font-weight:700;color:#12a150">엄</span></div><div class="mid"><div class="t">엄마</div><div class="s">10월 4일 참여</div></div><div class="right"><div class="iconbtn" style="background:transparent">⋯</div></div></div>
+          <div class="lr sep"><div class="cat c3" style="border-radius:50%"><span style="font-weight:700;color:#7a3cf0">나</span></div><div class="mid"><div class="t">동생</div><div class="s">10월 4일 참여</div></div><div class="right"><div class="iconbtn" style="background:transparent">⋯</div></div></div>
+          <div class="lr sep"><div class="cat c4" style="border-radius:50%"><span style="font-weight:700;color:#d98200">할</span></div><div class="mid"><div class="t">할머니</div><div class="s">10월 4일 참여</div></div><div class="right"><div class="iconbtn" style="background:transparent">⋯</div></div></div>
+          <div style="height:10px;background:var(--bg);margin-top:12px"></div>
+          <div class="lr chev" style="padding:16px 20px"><div class="mid"><div class="t">초대 링크 만들기</div><div class="s">가족이나 룸메이트를 초대해요</div></div><div class="right"></div></div>
+          <div style="height:10px;background:var(--bg)"></div>
+          <div style="padding:16px 20px;color:var(--ink3);font-size:13px;line-height:1.55">소유자는 소유권을 다른 멤버에게 넘긴 뒤에 공간을 나갈 수 있어요.</div>
+          <div class="textbtn red" style="margin-top:-6px">소유권 넘기기…</div>
+        </div></div></div>
+      <div class="cap"><b>7 멤버</b> 소유자 화면. 각 행에 참여일이 보이고, ⋯를 누르면 아래에서 행동 시트(7-b)가 올라옵니다. 일반 멤버는 다른 사람 행에 ⋯가 없고 맨 아래에 "공간 나가기"만 보입니다.
+        <div class="tags"><span class="tag api">GET /households/{id}</span><span class="tag api">DELETE …/members/{userId}</span><span class="tag api">POST …/ownership-transfer</span><span class="tag api">DELETE …/membership</span><span class="tag warn">이름·표시: 닉네임 필요</span><span class="tag">ListRow</span><span class="tag">BottomSheet</span></div></div>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="cell">
+      <div class="phone"><div class="sys"><div class="brand"><div class="logo"></div>살림잇다</div><div class="pill"><span>···</span><span>✕</span></div></div>
+        <div class="body">
+          <div class="top"><div><h3>멤버 3명</h3></div></div>
+          <div class="lr sep"><div class="cat c1" style="border-radius:50%"><span style="font-weight:700;color:var(--blue-deep)">아</span></div><div class="mid"><div class="t">아빠 <span class="badge blue">소유자</span> <span class="badge gray">나</span></div><div class="s">10월 4일 참여</div></div><div class="right"><div class="iconbtn" style="background:transparent">⋯</div></div></div>
+          <div class="lr sep"><div class="cat c2" style="border-radius:50%"><span style="font-weight:700;color:#12a150">엄</span></div><div class="mid"><div class="t">엄마</div><div class="s">10월 4일 참여</div></div><div class="right"><div class="iconbtn" style="background:transparent">⋯</div></div></div>
+          <div class="lr sep"><div class="cat c3" style="border-radius:50%"><span style="font-weight:700;color:#7a3cf0">동</span></div><div class="mid"><div class="t">동생</div><div class="s">10월 4일 참여</div></div><div class="right"><div class="iconbtn" style="background:transparent">⋯</div></div></div>
+          <div class="dim"></div>
+          <div class="sheet"><div class="grab"></div><h4 style="margin-bottom:6px">아빠</h4><div class="lr" style="padding:15px 0;border-bottom:1px solid #f2f4f6"><div class="mid"><div class="t" style="font-size:16px;font-weight:500;">이름 바꾸기</div></div></div><div class="lr" style="padding:15px 0;"><div class="mid"><div class="t" style="font-size:16px;font-weight:500;">소유권 넘기기</div></div></div></div>
+        </div></div>
+      <div class="cap"><b>7-b ⋯ 행동 시트</b> 내 행의 ⋯. 상황에 맞는 항목만 보입니다: 이름 바꾸기, 소유권 넘기기(다른 멤버가 있을 때), 공간 해산(혼자일 때), 공간 나가기(일반 멤버). 다른 사람 행(소유자만)은 "소유자로 지정", "내보내기(빨간색)". 작은 팝업 대신 시트라 누르기 쉽고 화면 위쪽 행에서도 잘리지 않습니다.
+        <div class="tags"><span class="tag">BottomSheet</span><span class="tag">ListRow</span><span class="tag">useDialog</span></div></div>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="cell">
+      <div class="phone"><div class="sys"><div class="brand"><div class="logo"></div>살림잇다</div><div class="pill"><span>···</span><span>✕</span></div></div>
+        <div class="body">
+          <div class="top"><div><h3>멤버 3명</h3></div></div>
+          <div class="lr sep"><div class="cat c1" style="border-radius:50%"><span style="font-weight:700;color:var(--blue-deep)">아</span></div><div class="mid"><div class="t">아빠 <span class="badge blue">소유자</span> <span class="badge gray">나</span></div><div class="s">10월 4일 참여</div></div><div class="right"><div class="iconbtn" style="background:transparent">⋯</div></div></div>
+          <div class="lr sep"><div class="cat c2" style="border-radius:50%"><span style="font-weight:700;color:#12a150">엄</span></div><div class="mid"><div class="t">엄마</div><div class="s">10월 4일 참여</div></div><div class="right"><div class="iconbtn" style="background:transparent">⋯</div></div></div>
+          <div class="lr sep"><div class="cat c3" style="border-radius:50%"><span style="font-weight:700;color:#7a3cf0">동</span></div><div class="mid"><div class="t">동생</div><div class="s">10월 4일 참여</div></div><div class="right"><div class="iconbtn" style="background:transparent">⋯</div></div></div>
+          <div class="dim"></div>
+          <div class="sheet"><div class="grab"></div><h4 style="margin-bottom:2px">누구에게 넘길까요?</h4><div class="d" style="margin-bottom:6px">넘기면 나는 일반 멤버가 돼요.</div><div class="lr" style="padding:12px 0;border-bottom:1px solid #f2f4f6"><div class="cat c2" style="border-radius:50%"><span style="font-weight:700;color:#12a150">엄</span></div><div class="mid"><div class="t">엄마</div></div><div class="right chev"></div></div><div class="lr" style="padding:12px 0"><div class="cat c3" style="border-radius:50%"><span style="font-weight:700;color:#7a3cf0">동</span></div><div class="mid"><div class="t">동생</div></div><div class="right chev"></div></div></div>
+        </div></div>
+      <div class="cap"><b>7-c 소유권 넘길 사람 고르기</b> "소유권 넘기기"(메뉴 또는 맨 아래 빨간 글자)를 누르면 먼저 사람을 고르고, 고른 뒤에 11-a 확인 창이 뜹니다.
+        <div class="tags"><span class="tag api">POST …/ownership-transfer</span><span class="tag">BottomSheet</span></div></div>
+    </div>
+    <div class="arrow">→</div>
+
+
+    <div class="cell">
+      <div class="phone"><div class="sys"><div class="brand"><div class="logo"></div>살림잇다</div><div class="pill"><span>···</span><span>✕</span></div></div>
+        <div class="body">
+          <div class="top"><div><h3>멤버 4명</h3></div></div>
+          <div class="lr sep"><div class="cat c1" style="border-radius:50%"><span style="font-weight:700;color:var(--blue-deep)">아</span></div><div class="mid"><div class="t">아빠 <span class="badge blue">소유자</span></div></div></div>
+          <div class="lr sep"><div class="cat c2" style="border-radius:50%"><span style="font-weight:700;color:#12a150">엄</span></div><div class="mid"><div class="t">엄마</div><div class="s">10월 4일 참여</div></div></div>
+          <div class="dim"></div>
+          <div class="sheet">
+            <div class="grab"></div>
+            <h4>초대 링크 만들기</h4>
+            <div class="d">링크를 받은 사람은 별도 가입 없이 참여할 수 있어요.</div>
+            <div class="lbl">유효 시간</div>
+            <div class="seg"><i>1시간</i><i class="on">1일</i><i>7일</i></div>
+            <div class="lbl">참여할 수 있는 사람 수</div>
+            <div class="seg"><i>1명</i><i class="on">3명</i><i>5명</i><i>10명</i></div>
+            <div class="btn" style="margin-top:22px">링크 만들기</div>
+          </div>
+        </div></div>
+      <div class="cap"><b>8-a 초대 링크 만들기</b> 시간(1~168시간)과 인원(1~10명)은 서버 제한 안에서 고정 선택지로 줍니다.
+        <div class="tags"><span class="tag api">POST …/invitations</span><span class="tag">BottomSheet</span><span class="tag">SegmentedControl</span><span class="tag">Button</span></div></div>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="cell">
+      <div class="phone"><div class="sys"><div class="brand"><div class="logo"></div>살림잇다</div><div class="pill"><span>···</span><span>✕</span></div></div>
+        <div class="body">
+          <div class="top"><div><h3>멤버 4명</h3></div></div>
+          <div class="dim"></div>
+          <div class="sheet">
+            <div class="grab"></div>
+            <h4>링크가 만들어졌어요</h4>
+            <div class="d">1일 동안, 최대 3명이 참여할 수 있어요.</div>
+            <div class="linkbox">intoss://salim-link/invite?token=szJiyuPIOtrdCNr1Gvxl9nA_kvYaDSXn…</div>
+            <div style="display:flex;gap:8px;margin-top:16px"><div class="btn" style="flex:1">공유하기</div><div class="btn gray" style="width:96px">복사</div></div>
+            <div class="textbtn red" style="margin-top:10px">이 링크 취소하기</div>
+            <div style="text-align:center;font-size:12px;color:var(--ink3);margin-top:2px">링크는 지금만 전체를 볼 수 있어요</div>
+          </div>
+        </div></div>
+      <div class="cap"><b>8-b 링크 완성</b> 원본 토큰은 이 순간에만 받을 수 있어, 닫으면 다시 못 봅니다. "취소하기"는 방금 받은 초대 ID로 호출합니다.
+        <div class="tags"><span class="tag api">DELETE …/invitations/{id}</span><span class="tag">토스 공유 링크(SDK)</span><span class="tag">BottomSheet</span></div></div>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="cell">
+      <div class="phone"><div class="sys"><div class="brand"><div class="logo"></div>살림잇다</div><div class="pill"><span>···</span><span>✕</span></div></div>
+        <div class="body">
+          <div class="result" style="padding-top:60px">
+            <div class="fig" role="img" aria-label="살림잇다 앱 아이콘"></div>
+            <h3>'우리집'에<br>초대받았어요</h3>
+            <p>참여하면 집에 있는 물품과<br>남은 수량을 함께 볼 수 있어요.</p>
+          </div>
+          <div class="tf" style="margin-top:26px"><label>이 공간에서 쓸 내 이름 <span class="tag warn">API 추가 필요</span></label><div class="box focus"><span>동생<i class="caret"></i></span></div></div>
+          <div class="cta"><div class="btn">참여하기</div></div>
+        </div></div>
+      <div class="cap"><b>9 초대 수락</b> 링크로 열면 바로 이 화면. 참여 전에 공간 이름과 사용 가능 여부를 보여 줍니다. 이미 멤버면 바로 홈으로 보냅니다.
+        <div class="tags"><span class="tag api">GET /invitations/{token}</span><span class="tag api">POST /invitations/{token}/accept</span><span class="tag">Result</span><span class="tag">TextField</span></div></div>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="cell">
+      <div class="phone"><div class="sys"><div class="brand"><div class="logo"></div>살림잇다</div><div class="pill"><span>···</span><span>✕</span></div></div>
+        <div class="body">
+          <div class="result" style="padding-top:90px">
+            <div class="fig" style="background:var(--bg)"><svg width="56" height="56" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#8b95a1" stroke-width="2.4"/><path d="M12 7.5V12.5l3 2" fill="none" stroke="#8b95a1" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+            <h3>초대 링크가<br>더 이상 쓸 수 없어요</h3>
+            <p>만료되었거나 이미 사용이 끝난 링크예요.<br>링크를 보낸 사람에게 새 링크를 요청해 주세요.</p>
+          </div>
+          <div class="cta"><div class="btn gray">닫기</div></div>
+        </div></div>
+      <div class="cap"><b>10 초대 불가</b> 만료, 취소, 횟수 소진은 사용자에게는 같은 안내입니다. 없는 링크는 "찾을 수 없어요"로 구분합니다.
+        <div class="tags"><span class="tag api">available: false</span><span class="tag api">410 INVITATION_UNAVAILABLE</span><span class="tag api">404 INVITATION_NOT_FOUND</span><span class="tag">Result</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ D. 되돌릴 수 없는 동작 ============ -->
+<section class="flow">
+  <h2>D. 되돌릴 수 없는 동작은 한 번 더 묻기</h2>
+  <p class="sub">소유권 넘기기, 내보내기, 나가기, 공간 해산. 위험한 쪽 버튼만 빨간색으로 하고, 문구에 결과를 적습니다.</p>
+  <div class="row">
+
+    <div class="cell">
+      <div class="phone"><div class="sys"><div class="brand"><div class="logo"></div>살림잇다</div><div class="pill"><span>···</span><span>✕</span></div></div>
+        <div class="body">
+          <div class="top"><div><h3>멤버 4명</h3></div></div>
+          <div class="lr sep"><div class="cat c1" style="border-radius:50%"><span style="font-weight:700;color:var(--blue-deep)">아</span></div><div class="mid"><div class="t">아빠 <span class="badge blue">소유자</span></div></div></div>
+          <div class="lr sep"><div class="cat c2" style="border-radius:50%"><span style="font-weight:700;color:#12a150">엄</span></div><div class="mid"><div class="t">엄마</div><div class="s">10월 4일 참여</div></div></div>
+          <div class="dim"></div>
+          <div class="dialog"><h4>엄마에게 소유권을<br>넘길까요?</h4><p>넘긴 뒤에는 내가 일반 멤버가 돼요. 초대 링크 만들기와 멤버 관리는 엄마만 할 수 있어요.</p><div class="acts"><div class="btn gray">취소</div><div class="btn">넘기기</div></div></div>
+        </div></div>
+      <div class="cap"><b>11-a 소유권 넘기기</b> 되돌릴 수는 있지만(상대가 다시 넘기면) 권한이 바뀌므로 확인합니다.
+        <div class="tags"><span class="tag api">POST …/ownership-transfer</span><span class="tag">useDialog</span></div></div>
+    </div>
+
+    <div class="cell">
+      <div class="phone"><div class="sys"><div class="brand"><div class="logo"></div>살림잇다</div><div class="pill"><span>···</span><span>✕</span></div></div>
+        <div class="body">
+          <div class="top"><div><h3>멤버 1명</h3></div></div>
+          <div class="lr sep"><div class="cat c1" style="border-radius:50%"><span style="font-weight:700;color:var(--blue-deep)">아</span></div><div class="mid"><div class="t">아빠 <span class="badge blue">소유자</span></div></div></div>
+          <div class="dim"></div>
+          <div class="dialog"><h4>공간을 해산할까요?</h4><p>물품, 수량 변경 이력, 초대 링크가 모두 삭제돼요. <b style="color:var(--red)">되돌릴 수 없어요.</b></p><div class="acts"><div class="btn gray">취소</div><div class="btn danger">해산하기</div></div></div>
+        </div></div>
+      <div class="cap"><b>11-b 공간 해산</b> 소유자 혼자 남았을 때만 메뉴에 나타납니다. 다른 멤버가 있으면 이 항목 자체를 숨깁니다.
+        <div class="tags"><span class="tag api">DELETE /households/{id}</span><span class="tag api">409 HOUSEHOLD_NOT_EMPTY</span><span class="tag">useDialog</span></div></div>
+    </div>
+
+    <div class="cell">
+      <div class="phone"><div class="sys"><div class="brand"><div class="logo"></div>살림잇다</div><div class="pill"><span>···</span><span>✕</span></div></div>
+        <div class="body">
+          <div class="top"><div><h3>멤버 4명</h3></div></div>
+          <div class="lr sep"><div class="cat c1" style="border-radius:50%"><span style="font-weight:700;color:var(--blue-deep)">아</span></div><div class="mid"><div class="t">아빠 <span class="badge blue">소유자</span></div></div></div>
+          <div class="dim"></div>
+          <div class="dialog"><h4>우리집에서 나갈까요?</h4><p>나가면 이 공간의 물품을 볼 수 없어요. 다시 들어오려면 새 초대 링크가 필요해요.</p><div class="acts"><div class="btn gray">취소</div><div class="btn danger">나가기</div></div></div>
+        </div></div>
+      <div class="cap"><b>11-c 공간 나가기 / 내보내기</b> 일반 멤버가 나갈 때, 소유자가 멤버를 내보낼 때 같은 형태의 다이얼로그를 씁니다.
+        <div class="tags"><span class="tag api">DELETE …/membership</span><span class="tag api">DELETE …/members/{userId}</span><span class="tag api">409 OWNER_TRANSFER_REQUIRED</span></div></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============ E. 알림과 사러 가기 ============ -->
+<section class="flow">
+  <h2>E. 알림과 사러 가기</h2>
+  <p class="sub">물품이 0이 된 채로 시간이 지나면 다른 멤버에게 알림을 보냅니다. 알림은 상태만 알리고(구매 권유 문구는 카피 리뷰에서 반려될 수 있음), 앱에서 "사러 가기"로 이어집니다.</p>
+  <div class="row">
+
+    <div class="cell">
+      <div class="phone"><div class="sys"><div class="brand"><div class="logo"></div>알림</div><div class="pill"><span>···</span><span>✕</span></div></div>
+        <div class="lock">
+          <div class="clock">9:41</div><div class="date">10월 4일 토요일</div>
+          <div class="notif"><div class="ico"></div><div class="tx"><div class="app"><span>살림잇다</span><span>지금</span></div><div class="tt">재고 소진</div><div class="bd">치약 재고가 없어요.</div></div></div>
+        </div></div>
+      <div class="cap"><b>12-a 푸시 알림</b> 치약을 0으로 만든 사람(엄마)을 뺀 멤버(아빠, 동생)에게 갑니다. 같은 문구로 1일 뒤 다시 보냅니다(최대 3번).
+        <div class="tags"><span class="tag warn">카피 리뷰 필요</span><span class="tag">제목 5자 / 본문 11자</span><span class="tag">변수 itemName</span><span class="tag api">POST …/messenger/send-message</span><span class="tag">x-anon-key</span></div></div>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="cell">
+      <div class="phone"><div class="sys"><div class="brand"><div class="logo"></div>살림잇다</div><div class="pill"><span>···</span><span>✕</span></div></div>
+        <div class="body"><div class="scroll">
+          <div class="top"><div><h3>치약</h3><div class="sub"><span class="badge gray">욕실</span></div></div><div class="iconbtn">✎</div></div>
+          <div style="text-align:center;padding:14px 20px 4px">
+            <div style="font-size:14px;color:var(--ink2)">지금 남은 수량</div>
+            <div style="font-size:56px;font-weight:800;letter-spacing:-0.04em;line-height:1.15">0<span style="font-size:22px;font-weight:600;color:var(--ink3);margin-left:4px">개</span></div>
+            <div style="margin-top:2px"><span class="badge red">부족</span></div>
+            <div style="margin:16px auto 0;width:200px"><div class="spin lg" style="width:100%;justify-content:space-between"><b>−</b><span>0</span><b>+</b></div></div>
+            <div class="btn sm" style="margin:12px auto 0;width:200px">치약 사러 가기</div>
+          </div>
+          <div style="margin:18px 20px 6px;border-top:1px solid var(--line);padding-top:6px">
+            <div class="lr" style="padding:8px 0"><div class="mid" style="color:var(--ink2);font-size:14px">부족 기준</div><div class="right" style="color:var(--ink);font-size:14px;font-weight:600">2개</div></div>
+          </div>
+          <div class="sechead">변경 이력</div>
+          <div class="lr sep" style="padding:9px 20px"><div class="mid"><div class="t" style="font-size:14px">엄마</div><div class="s">오늘 6:40</div></div><div class="right" style="color:var(--ink);font-weight:600;font-size:14px">1 → 0</div></div>
+        </div></div></div>
+      <div class="cap"><b>12-b 알림을 누르면</b> 해당 물품 상세가 열립니다. 수량이 부족 기준 이하일 때만 "사러 가기"가 나옵니다(홈 목록의 같은 이름 링크도 같음). 누르면 12-e 안내가 뜹니다. 채워서 0이 아니게 되면 남은 알림은 취소됩니다.
+        <div class="tags"><span class="tag">intoss://salim-link/items</span><span class="tag warn">쇼핑 이동 공식 방법 없음</span><span class="tag">Button</span><span class="tag">useDialog</span></div></div>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="cell">
+      <div class="phone"><div class="sys"><div class="brand"><div class="logo"></div>살림잇다</div><div class="pill"><span>···</span><span>✕</span></div></div>
+        <div class="body"><div class="scroll">
+          <div class="top"><div><h3>치약</h3><div class="sub"><span class="badge gray">욕실</span></div></div><div class="iconbtn">✎</div></div>
+          <div style="text-align:center;padding:14px 20px 4px">
+            <div style="font-size:14px;color:var(--ink2)">지금 남은 수량</div>
+            <div style="font-size:56px;font-weight:800;letter-spacing:-0.04em;line-height:1.15">0<span style="font-size:22px;font-weight:600;color:var(--ink3);margin-left:4px">개</span></div>
+            <div style="margin-top:2px"><span class="badge red">부족</span></div>
+          </div>
+        </div>
+          <div class="dim"></div>
+          <div class="dialog"><h4>'치약' 사러 가볼까요?</h4><p>이름을 복사했어요. 토스 앱 아래의 '쇼핑' 탭에서 붙여넣어 검색해 보세요.</p><div class="acts"><div class="btn">확인</div></div></div>
+        </div></div>
+      <div class="cap"><b>12-e 사러 가기 안내</b> 이름을 복사하고 안내만 합니다. 앱 밖(웹페이지)으로 보내지 않습니다. 토스 앱 안의 쇼핑으로 바로 가는 공식 방법이 없고(<code>supertoss://</code> 딥링크는 정책상 불가, 공유 링크는 복귀 문제), 공식 주소가 생기면 확인 뒤 그 주소로 연결합니다.
+        <div class="tags"><span class="tag warn">토스 문의 필요</span><span class="tag">navigator.clipboard</span><span class="tag">useDialog</span><span class="tag">VITE_SHOP_URL(선택)</span></div></div>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="cell">
+      <div class="phone"><div class="sys"><div class="brand"><div class="logo"></div>살림잇다</div><div class="pill"><span>···</span><span>✕</span></div></div>
+        <div class="body"><div class="scroll">
+          <div class="top"><div><h3>알림은 이렇게 가요</h3></div></div>
+          <div style="padding:6px 20px 0">
+            <ul class="tl">
+              <li><b>엄마</b>가 치약을 <b>0</b>으로 바꿔요.<br>알림 대기가 시작돼요.</li>
+              <li><b>3시간</b> 뒤에도 0이면<br><b>아빠 · 동생</b>에게 알림(12-a)을 보내요.<br><span style="color:var(--ink3)">0으로 바꾼 엄마에게는 보내지 않아요.</span></li>
+              <li>그래도 0이면 <b>1일</b>마다 같은 알림을<br>최대 <b>3번</b>까지 보내요.</li>
+              <li class="end">중간에 채워 <b>0이 아니게 되면</b><br>남은 알림은 <b>취소</b>돼요.</li>
+              <li class="stop">공간을 해산하면 알림도 같이 사라져요.</li>
+            </ul>
+          </div>
+          <div class="sechead">신청할 템플릿 (1개)</div>
+          <div class="tpl"><div class="k">제목 (7자 이내, 명사형)</div><div class="v">재고 소진</div><div class="k" style="margin-top:8px">본문 (25자 이내, 변수는 2글자)</div><div class="v body">{itemName} 재고가 없어요.</div><div class="n">첫 알림과 다시 알림이 같은 문구를 씁니다.</div></div>
+        </div></div></div>
+      <div class="cap"><b>12-c 발송 규칙</b> 서버가 1분마다 보낼 때가 된 알림을 찾아 보냅니다. 시간과 횟수는 설정값(기본 3시간 · 1일 · 3번)입니다. 템플릿 코드가 없으면 보내지 않고 기록만 합니다.
+        <div class="tags"><span class="tag">family-share.alert.*</span><span class="tag">ALERT_TEMPLATE_SET_CODE</span><span class="tag">서버 작업(완료)</span></div></div>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="cell">
+      <div class="phone"><div class="sys"><div class="brand"><div class="logo"></div>살림잇다</div><div class="pill"><span>···</span><span>✕</span></div></div>
+        <div class="body">
+          <div class="top"><div><h3>우리집 ▾</h3></div><div class="iconbtn">👥<span class="dot">3</span></div></div>
+          <div class="lr sep"><div class="cat c1"><svg><use href="#i-bath"/></svg></div><div class="mid"><div class="t">치약 <span class="badge red">부족</span></div><div class="s">부족 기준 2개<span style="color:var(--blue);font-weight:600;margin-left:8px">사러 가기</span></div></div><div class="right"><div class="spin"><b>−</b><span>0</span><b>+</b></div></div></div>
+          <div class="dim"></div>
+          <div class="dialog"><h4>재고가 없으면<br>알려드릴까요?</h4><p>물품이 다 떨어진 채로 시간이 지나면 알림을 보내요. 설정에서 언제든 끌 수 있어요.</p><div class="acts"><div class="btn gray">나중에</div><div class="btn">알림 받기</div></div></div>
+        </div></div>
+      <div class="cap"><b>12-d 알림 동의 (조건부)</b> 콘솔에서 이 템플릿에 알림 동의문이 필요하다고 나올 때만 넣습니다. 이름이 정해지면 첫 공간 만들기 직후나 처음 홈에서 한 번 묻습니다.
+        <div class="tags"><span class="tag warn">동의 필요 여부 미정</span><span class="tag">Notification.requestAgreement</span><span class="tag">useDialog</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 노트 ============ -->
+<section class="flow"><h2>정해야 할 것과 범위</h2></section>
+<div class="notes">
+  <div class="note warn">
+    <h4>1. 멤버 이름(닉네임)이 필요해요: 서버 추가 작업</h4>
+    사용자 식별키 방식이라 사용자에게 이름이 없습니다. 지금 API로는 "엄마가 바꿨어요", 멤버 목록의 이름, 변경 이력의 이름을 만들 수 없습니다.
+    <ul>
+      <li>제안: 공간을 만들거나 참여할 때 <b>이 공간에서 쓸 이름</b>을 받아 멤버에 저장합니다(공간마다 다른 이름 가능).</li>
+      <li>서버 변경: <code>HouseholdMember.nickname</code> 추가, 공간 생성·초대 수락 요청에 <code>nickname</code>, 멤버 응답과 수량 변경 이력 응답에 이름 포함.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h4>2. 첫 버전에서 뺀 것</h4>
+    <ul>
+      <li><b>알림 설정 화면</b>(켜기·끄기, 공간별): 첫 버전은 서버가 기본값으로 보냅니다. 동의 화면(12-d)은 콘솔에서 필요하다고 나올 때 추가합니다.</li>
+      <li><b>물품 삭제</b>: 계약에 없습니다(잘못 만든 물품은 일단 수정).</li>
+      <li><b>발급한 초대 목록</b>: 조회 API가 없어서, 방금 만든 링크만 취소할 수 있습니다.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h4>3. 주요 기능(토스 상세 화면 바로가기) 후보</h4>
+    <ul>
+      <li>생필품 수량 보기 · <code>Check stock</code> → <code>intoss://salim-link/items</code> (3 홈)</li>
+      <li>초대 링크 만들기 · <code>Invite members</code> → <code>intoss://salim-link/invite</code> (7 멤버)</li>
+      <li>이 경로들이 화면의 실제 라우트가 됩니다.</li>
+    </ul>
+  </div>
+  <div class="note">
+    <h4>4. 디자인 원칙(토스 미니앱 심사 기준 반영)</h4>
+    <ul>
+      <li>로그인·동의창 없음, 열자마자 쓸 수 있음(식별키 방식)</li>
+      <li>첫 화면에서 해야 할 일이 하나만 보임, 끝나면 완료를 알림</li>
+      <li>샘플 문구와 임시 이미지는 출시 전에 모두 제거</li>
+      <li>색은 파란색 하나로 행동을 강조, 빨강은 부족·위험에만</li>
+    </ul>
+  </div>
+</div>
+
+</body>
+</html>
