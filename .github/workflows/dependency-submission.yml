@@ -1,0 +1,23 @@
+# 백엔드(Gradle) 의존성 목록을 GitHub에 제출한다.
+# 의존성 버전을 Spring Boot 플러그인이 정해 주기 때문에, GitHub이 build.gradle.kts 만 읽어서는 버전을 알 수 없다.
+# 제출하면 Dependabot 이 취약한 버전을 찾아 알려 준다. 코드를 배포하거나 비밀값을 쓰지 않는다.
+name: Gradle 의존성 제출
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # 의존성 스냅샷을 올리는 데 필요하다
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/dependency-submission@v6
