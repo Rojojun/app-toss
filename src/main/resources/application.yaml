@@ -1,3 +1,32 @@
 spring:
   application:
     name: family-share
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      # 스키마는 Flyway(db/migration)가 만들고, 애플리케이션은 엔티티와 맞는지 확인만 한다.
+      ddl-auto: validate
+
+server:
+  servlet:
+    context-path: /api/v1
+
+family-share:
+  toss:
+    base-url: https://apps-in-toss-api.toss.im
+    ssl-bundle:
+  alert:
+    # 0이 된 채 이 시간이 지나면 처음 알리고, 그 뒤 reminder-interval 마다 max-reminders 번까지 다시 알린다.
+    out-of-stock-delay: PT3H
+    reminder-interval: P1D
+    max-reminders: 3
+    # 콘솔 기능성 캠페인의 템플릿 코드(카피 리뷰 승인 후). 비어 있으면 발송하지 않고 기록만 한다.
+    template-set-code: ${ALERT_TEMPLATE_SET_CODE:}
+  cors:
+    allowed-origins: https://${TOSS_APP_NAME}.apps.tossmini.com,https://${TOSS_APP_NAME}.private-apps.tossmini.com
+  auth:
+    jwt:
+      secret-base64: ${JWT_SECRET_BASE64}

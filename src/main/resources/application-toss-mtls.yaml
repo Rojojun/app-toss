@@ -1,0 +1,14 @@
+# mTLS 인증서가 있을 때만 켠다: SPRING_PROFILES_ACTIVE=toss-mtls
+# TOSS_MTLS_CERTIFICATE, TOSS_MTLS_PRIVATE_KEY는 file:/절대/경로 또는 PEM 본문이다.
+spring:
+  ssl:
+    bundle:
+      pem:
+        toss:
+          keystore:
+            certificate: ${TOSS_MTLS_CERTIFICATE}
+            private-key: ${TOSS_MTLS_PRIVATE_KEY}
+
+family-share:
+  toss:
+    ssl-bundle: toss
