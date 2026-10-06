@@ -14,7 +14,7 @@ export function StartPage() {
         </div>
       </div>
       <BottomCTA.Single fixed onClick={() => navigate("/create")}>우리집 공간 만들기</BottomCTA.Single>
-      <div className="foot-link muted" style={{ position: "fixed", left: 0, right: 0, bottom: 96, fontSize: 13 }}>
+      <div className="foot-link" style={{ position: "fixed", left: 0, right: 0, bottom: 96, zIndex: 1, color: "#191f28", fontSize: 14, fontWeight: 600 }}>
         초대를 받았다면 받은 링크로 다시 열어 주세요
       </div>
     </div>

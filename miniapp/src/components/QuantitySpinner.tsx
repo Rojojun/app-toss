@@ -1,4 +1,4 @@
-import { useState, type MouseEvent } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import { Button, NumericSpinner, TextField, useBottomSheet } from "@toss/tds-mobile";
 
 const MIN = 0;
@@ -8,11 +8,25 @@ const clamp = (value: number): number => Math.min(MAX, Math.max(MIN, value));
 
 function InputSheet({ initial, title, onSubmit }: { readonly initial: number; readonly title: string; readonly onSubmit: (value: number) => void }) {
   const [text, setText] = useState(String(initial));
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const digits = text.replace(/\D/g, "");
   const value = digits === "" ? null : clamp(Number(digits));
 
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const update = () => setKeyboardHeight(Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop));
+    viewport.addEventListener("resize", update);
+    viewport.addEventListener("scroll", update);
+    update();
+    return () => {
+      viewport.removeEventListener("resize", update);
+      viewport.removeEventListener("scroll", update);
+    };
+  }, []);
+
   return (
-    <div className="stack" style={{ paddingBottom: 24 }}>
+    <div className="stack" style={{ paddingBottom: 24, transform: `translateY(-${keyboardHeight}px)` }}>
       <h3 className="sheet-title">{title}</h3>
       <TextField
         variant="box"

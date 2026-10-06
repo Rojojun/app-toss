@@ -51,7 +51,7 @@ export function InviteAcceptPage({ token }: { readonly token: string }) {
         variant="box"
         label="이 공간에서 쓸 내 이름"
         labelOption="sustain"
-        placeholder="나"
+        placeholder="예시) 나"
         value={nickname}
         maxLength={20}
         hasError={accept.isError}

@@ -24,12 +24,12 @@ export function CreateHouseholdPage() {
     <div className="page">
       <Top title={<Top.TitleParagraph>공간 이름을<br />정해 주세요</Top.TitleParagraph>} />
       <div className="stack">
-        <TextField variant="box" label="공간 이름" labelOption="sustain" placeholder="우리집" value={name} maxLength={30} onChange={(e) => setName(e.target.value)} />
+        <TextField variant="box" label="공간 이름" labelOption="sustain" placeholder="예시) 우리집" value={name} maxLength={30} onChange={(e) => setName(e.target.value)} />
         <TextField
           variant="box"
           label="이 공간에서 쓸 내 이름"
           labelOption="sustain"
-          placeholder="나"
+          placeholder="예시) 나"
           value={nickname}
           maxLength={20}
           hasError={create.isError}

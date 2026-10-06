@@ -21,6 +21,7 @@ export function ItemFormPage() {
   const [name, setName] = useState(existing?.name ?? "");
   const [category, setCategory] = useState<ItemCategory>(existing?.category ?? "TOILETRIES");
   const [unit, setUnit] = useState(existing?.unit ?? "개");
+  const [customUnit, setCustomUnit] = useState(Boolean(existing?.unit && !UNITS.includes(existing.unit as typeof UNITS[number])));
   const [quantity, setQuantity] = useState(1);
   const [threshold, setThreshold] = useState(existing?.lowStockThreshold ?? 1);
 
@@ -47,7 +48,7 @@ export function ItemFormPage() {
     <div className="page">
       <Top title={<Top.TitleParagraph>{existing ? "물품 수정" : "물품 추가"}</Top.TitleParagraph>} />
       <div className="stack">
-        <TextField variant="box" label="이름" labelOption="sustain" placeholder="치약" value={name} maxLength={30} onChange={(e) => setName(e.target.value)} />
+        <TextField variant="box" label="이름" labelOption="sustain" placeholder="예시) 치약" value={name} maxLength={30} onChange={(e) => setName(e.target.value)} />
         <div className="pad stack" style={{ gap: 8 }}>
           <span className="muted">아이콘</span>
           <div className="icon-grid">
@@ -63,23 +64,26 @@ export function ItemFormPage() {
           <span className="muted">단위 (수량 뒤에 붙는 말)</span>
           <div className="chips">
             {UNITS.map((entry) => (
-              <button key={entry} type="button" className="chip" aria-pressed={unit === entry} onClick={() => setUnit(entry)}>
+              <button key={entry} type="button" className="chip" aria-pressed={!customUnit && unit === entry} onClick={() => { setCustomUnit(false); setUnit(entry); }}>
                 {entry}
               </button>
             ))}
+            <button type="button" className="chip" aria-pressed={customUnit} onClick={() => { setCustomUnit(true); if (UNITS.includes(unit as typeof UNITS[number])) setUnit(""); }}>
+              직접 입력
+            </button>
           </div>
         </div>
-        <TextField
+        {customUnit && <TextField
           variant="box"
-          label="직접 입력"
+          label="단위 직접 입력"
           labelOption="sustain"
-          placeholder="예: 개, 롤, 팩"
+          placeholder="예시) 묶음, 상자"
           value={unit}
           maxLength={10}
           hasError={unitInvalid}
           help={unitInvalid ? "단위에는 숫자를 쓸 수 없어요. 수량은 아래에서 정해요." : undefined}
           onChange={(e) => setUnit(e.target.value)}
-        />
+        />}
         {!existing && (
           <div className="kv">
             <span style={{ color: "inherit", fontWeight: 600 }}>지금 수량</span>
