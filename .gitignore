@@ -57,3 +57,7 @@ certs/
 *.log
 .DS_Store
 .claude/
+# infra
+infra/terraform/.terraform
+infra/terraform/*.tfstate*
+infra/terraform/*.tfplan
