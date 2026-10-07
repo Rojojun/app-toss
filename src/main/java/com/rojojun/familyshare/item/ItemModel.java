@@ -123,7 +123,6 @@ public class ItemModel extends BaseEntity {
         }
     }
 
-    // 0이 되면 "다 떨어졌어요" 알림 대기를 시작하고, 다시 채워지면(0 초과) 거둔다.
     void recordOutOfStockTransition(int previousQuantity, UUID actorUserId) {
         if (previousQuantity > 0 && quantity == 0) {
             registerEvent(new ItemOutOfStockEntered(householdId, getId(), name, actorUserId));
