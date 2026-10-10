@@ -14,8 +14,9 @@ public interface HouseholdMemberRepository
 
     @Query("""
             select h.id as householdId,
-                   h.name as householdName,
-                   m.role as myRole
+                    h.name as householdName,
+                    m.role as myRole,
+                    h.householdType as householdType
             from HouseholdMember m
             join m.householdModel h
             where m.user.id = :userId
@@ -38,5 +39,7 @@ public interface HouseholdMemberRepository
         String getHouseholdName();
 
         HouseholdMemberRole getMyRole();
+
+        HouseholdType getHouseholdType();
     }
 }

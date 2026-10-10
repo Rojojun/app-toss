@@ -1,6 +1,7 @@
 package com.rojojun.familyshare.user;
 
 import com.rojojun.familyshare.household.HouseholdMemberRole;
+import com.rojojun.familyshare.household.HouseholdType;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -21,6 +22,7 @@ public class AppUserDto {
     public record HouseholdSummary(
             UUID id,
             String name,
+            HouseholdType householdType,
             HouseholdMemberRole myRole
     ) {}
 }

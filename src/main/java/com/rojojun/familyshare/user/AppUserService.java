@@ -41,6 +41,7 @@ public class AppUserService {
                 .map(row -> new AppUserDto.HouseholdSummary(
                         row.getHouseholdId(),
                         row.getHouseholdName(),
+                        row.getHouseholdType(),
                         row.getMyRole()
                 ))
                 .toList();

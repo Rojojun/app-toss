@@ -25,7 +25,9 @@ public class InvitationService {
 
     @Transactional
     public Issued issue(UUID userId, UUID householdId, int maxUses, Duration validFor) {
+        var household = householdRepository.getHouseholdForUpdate(householdId);
         memberRepository.getMember(householdId, userId).requireOwner();
+        household.requireFamily();
 
         var issued = tokenGenerator.generate();
         var invitation = invitationRepository.save(InvitationModel.create(
@@ -48,20 +50,32 @@ public class InvitationService {
 
     @Transactional
     public Accepted accept(UUID userId, String rawToken, String nickname) {
-        var invitation = invitationRepository.getByTokenHashForUpdate(tokenGenerator.hash(rawToken));
+        var tokenHash = tokenGenerator.hash(rawToken);
+        var householdId = invitationRepository.findHouseholdIdByTokenHash(tokenHash)
+                .orElseThrow(InvitationNotFoundException::new)
+                .getHouseholdId();
+
+        var household = householdRepository.getHouseholdForUpdate(householdId);
+        var invitation = invitationRepository.getByTokenHashForUpdate(tokenHash);
 
         return memberRepository.findById(new HouseholdMemberId(invitation.getHouseholdId(), userId))
                 .map(existing -> new Accepted(existing, false))
-                .orElseGet(() -> new Accepted(memberRepository.save(invitation.accept(
-                        householdRepository.getReferenceById(invitation.getHouseholdId()),
-                        appUserRepository.getReferenceById(userId),
-                        nickname,
-                        Instant.now())), true));
+                .orElseGet(() ->{
+                    household.requireFamily();
+
+                    return new Accepted(memberRepository.save(invitation.accept(
+                            household,
+                            appUserRepository.getReferenceById(userId),
+                            nickname,
+                            Instant.now())), true);
+                });
     }
 
     @Transactional
     public void revoke(UUID userId, UUID householdId, UUID invitationId) {
+        householdRepository.getHouseholdForUpdate(householdId);
         memberRepository.getMember(householdId, userId).requireOwner();
+
         invitationRepository.getInHousehold(invitationId, householdId).revokeAt(Instant.now());
     }
 

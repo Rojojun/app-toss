@@ -15,16 +15,24 @@ public class HouseholdDto {
 
     public record CreateRequest(
             @NotBlank @Size(max = 100) String name,
-            @NotBlank @Size(max = 20) String nickname
+            @NotBlank @Size(max = 20) String nickname,
+            @NotNull HouseholdType householdType
     ) {}
 
     public record NicknameRequest(@NotBlank @Size(max = 20) String nickname) {}
 
     public record TransferRequest(@NotNull UUID newOwnerUserId) {}
 
+    public record StartSingleRequest(
+            UUID newOwnerUserId,
+            @NotBlank @Size(max = 100) String name,
+            @NotBlank @Size(max = 20) String nickname
+    ) {}
+
     public record Detail(
             UUID id,
             String name,
+            HouseholdType householdType,
             HouseholdMemberRole myRole,
             String myNickname,
             List<MemberResponse> members,
@@ -34,6 +42,7 @@ public class HouseholdDto {
             return new Detail(
                     snapshot.household().getId(),
                     snapshot.household().getName(),
+                    snapshot.household().getHouseholdType(),
                     snapshot.me().getRole(),
                     snapshot.me().getNickname(),
                     snapshot.members().stream().map(MemberResponse::from).toList(),
@@ -52,5 +61,8 @@ public class HouseholdDto {
                     member.getJoinedAt().atOffset(ZoneOffset.UTC)
             );
         }
+    }
+
+    public record TypeRequest(@NotNull HouseholdType householdType) {
     }
 }

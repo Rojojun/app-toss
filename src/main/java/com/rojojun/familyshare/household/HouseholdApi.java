@@ -24,14 +24,14 @@ public class HouseholdApi {
             @AuthenticationPrincipal CustomPrincipal principal,
             @RequestBody @Valid HouseholdDto.CreateRequest request
     ) {
-        var snapshot = householdService.create(principal.userId(), request.name(), request.nickname());
+        var snapshot = householdService.create(principal.userId(), request.name(), request.nickname(), request.householdType());
         return ResponseEntity.status(HttpStatus.CREATED).body(HouseholdDto.Detail.from(snapshot));
     }
 
     @GetMapping("/{householdId}")
     public ResponseEntity<HouseholdDto.Detail> getHousehold(
             @AuthenticationPrincipal CustomPrincipal principal,
-            @PathVariable("householdId") UUID householdId
+            @PathVariable UUID householdId
     ) {
         var snapshot = householdService.get(principal.userId(), householdId);
         return ResponseEntity.ok(HouseholdDto.Detail.from(snapshot));
@@ -40,7 +40,7 @@ public class HouseholdApi {
     @PatchMapping("/{householdId}")
     public ResponseEntity<HouseholdDto.Detail> updateHousehold(
             @AuthenticationPrincipal CustomPrincipal principal,
-            @PathVariable("householdId") UUID householdId,
+            @PathVariable UUID householdId,
             @RequestBody @Valid HouseholdDto.NameRequest request
     ) {
         var snapshot = householdService.rename(principal.userId(), householdId, request.name());
@@ -86,6 +86,16 @@ public class HouseholdApi {
         return ResponseEntity.ok(HouseholdDto.Detail.from(snapshot));
     }
 
+    @PatchMapping("/{householdId}/type")
+    public ResponseEntity<HouseholdDto.Detail> changeHouseholdType(
+            @AuthenticationPrincipal CustomPrincipal principal,
+            @PathVariable UUID householdId,
+            @RequestBody @Valid HouseholdDto.TypeRequest request
+    ) {
+        var snapshot = householdService.changeHouseholdType(principal.userId(), householdId, request.householdType());
+        return ResponseEntity.ok(HouseholdDto.Detail.from(snapshot));
+    }
+
     @DeleteMapping("/{householdId}/membership")
     public ResponseEntity<Void> leaveHousehold(
             @AuthenticationPrincipal CustomPrincipal principal,
@@ -93,5 +103,17 @@ public class HouseholdApi {
     ) {
         householdService.leave(principal.userId(), householdId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{householdId}/single-transition")
+    public ResponseEntity<HouseholdDto.Detail> startSingleHousehold(
+            @AuthenticationPrincipal CustomPrincipal principal,
+            @PathVariable UUID householdId,
+            @RequestBody @Valid HouseholdDto.StartSingleRequest request
+    ) {
+        var snapshot = householdService.startSingleHousehold(
+                principal.userId(), householdId, request.newOwnerUserId(),
+                request.name(), request.nickname());
+        return ResponseEntity.status(HttpStatus.CREATED).body(HouseholdDto.Detail.from(snapshot));
     }
 }
