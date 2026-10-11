@@ -130,3 +130,23 @@
 
 - 프로젝트 문서: [제품 기획](./01-product-plan.md), [사용자 전달·인증 흐름](./02-user-handoff.md)
 - 사용자 식별키 인증 코드 발급과 서버 교환: https://developers-apps-in-toss.toss.im/guide/authentication/anonymous-key-auth-code
+## 1인가구 분리 전환
+
+`POST /households/{householdId}/single-transition` (인증 필요)
+
+```json
+{
+  "newOwnerUserId": "양도 대상 구성원 UUID",
+  "name": "나의 살림",
+  "nickname": "나"
+}
+```
+
+- 관리자는 같은 가구의 다른 구성원 `newOwnerUserId`를 필수로 지정한다.
+- 일반 구성원은 `newOwnerUserId`를 생략하거나 null로 보낸다. 지정하면 거절한다.
+- 기존 가구가 FAMILY이고 다른 구성원이 있어야 한다. 혼자 남은 관리자는 `PATCH /households/{householdId}/type`으로 현재 가구를 변경한다.
+- 관리자: 양도 → 본인 탈퇴 → 기존 가구 초대 전체 삭제 → 새 SINGLE 가구 생성. 일반 구성원: 본인 탈퇴 → 새 SINGLE 가구 생성(기존 초대 유지).
+- 전체 작업은 하나의 트랜잭션이다. 실패하면 모두 롤백한다. 원래 가구의 유형, 물품, 변경 이력과 다른 구성원은 유지한다.
+- 성공 시 201과 새 가구의 `HouseholdDetail`을 반환한다. 화면은 반환된 가구 ID를 선택한다.
+- 이름은 1~100자(공백만 불가), 닉네임은 1~20자(공백만 불가).
+- 동시 요청 잠금·중복 재시도 보장은 후속 작업이다. 클라이언트는 처리 중 중복 제출을 막는다.
