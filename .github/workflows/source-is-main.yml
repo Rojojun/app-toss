@@ -1,0 +1,15 @@
+# prod-back / prod-front 로 가는 PR 은 main 에서만 출발해야 한다.
+# 브랜치 이름은 PR 을 연 사람이 정하므로, 셸에 직접 넣지 않고 환경변수로 넘긴다.
+name: source-is-main
+on:
+  pull_request:
+    branches: [prod-back, prod-front]
+permissions: {}
+jobs:
+  source-is-main:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: test "$HEAD_REPO" = "${{ github.repository }}" && test "$HEAD_REF" = "main"

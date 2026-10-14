@@ -12,12 +12,12 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-class ItemDomainEventTest {
+class ItemModelTest {
 
     @Autowired private ItemRepository itemRepository;
     @Autowired private OutOfStockAlertRepository  outOfStockAlertRepository;
 
-    @DisplayName("수량이 양수에서 0이 되면 알람 대기 행을 저장한다")
+    @DisplayName("수량이 최소 기준 점이 되면 알람 대기 행을 저장한다")
     @Transactional
     @Test
     void eventStart1() {
@@ -26,11 +26,11 @@ class ItemDomainEventTest {
                 "치약",
                 ItemCategory.TOILETRIES,
                 "개",
-                1,
-                0
+                4,
+                3
         ));
         var actorId = UUID.randomUUID();
-        item.changeStock(0, 0, actorId, "테스트 사용자");
+        item.changeStock(0,  3, actorId, "테스트 사용자");
         itemRepository.save(item);
 
         assertThat(outOfStockAlertRepository.findAll())

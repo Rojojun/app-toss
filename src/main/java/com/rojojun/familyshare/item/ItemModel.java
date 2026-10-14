@@ -124,10 +124,10 @@ public class ItemModel extends BaseEntity {
     }
 
     void recordOutOfStockTransition(int previousQuantity, UUID actorUserId) {
-        if (previousQuantity > 0 && quantity == 0) {
+        if (previousQuantity > lowStockThreshold && quantity <= lowStockThreshold) {
             registerEvent(new ItemOutOfStockEntered(householdId, getId(), name, actorUserId));
         }
-        if (previousQuantity == 0 && quantity > 0) {
+        if (previousQuantity <= lowStockThreshold && quantity > lowStockThreshold) {
             registerEvent(new ItemRestocked(householdId, getId()));
         }
     }
