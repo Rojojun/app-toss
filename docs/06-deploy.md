@@ -9,7 +9,7 @@
 - `/home/rojojun/houselink/certs/toss.crt`
 - `/home/rojojun/houselink/certs/toss.key`
 
-GitHub Settings → Environments → home-production → Environment secrets에 `HOME_APP_ENV`를 추가한다. 아래 형식대로 실제 값을 여러 줄로 입력한다. 실제 비밀번호와 JWT 키, 인증서는 Git에 넣지 않는다. 기존 JWT 키는 유지한다.
+GitHub Settings → Environments → home-production → Environment secrets에 `HOME_APP_ENV`를 추가한다. 아래 형식대로 실제 값을 여러 줄로 입력한다. 실제 비밀번호와 JWT 키, 인증서는 Git에 넣지 않는다. JWT 키는 새로 발급한 값을 사용한다.
 
 ```dotenv
 DB_URL=jdbc:postgresql://postgres:5432/family_share
@@ -19,7 +19,7 @@ TOSS_APP_NAME=실제_콘솔_appName
 SPRING_PROFILES_ACTIVE=toss-mtls
 TOSS_MTLS_CERTIFICATE=file:/certs/toss.crt
 TOSS_MTLS_PRIVATE_KEY=file:/certs/toss.key
-JWT_SECRET_BASE64=기존_값_유지
+JWT_SECRET_BASE64=새로_발급한_값
 ALERT_TEMPLATE_SET_CODE=
 SLACK_WEBHOOK_URL=
 ```
