@@ -75,7 +75,19 @@ jobs:
       - name: Replace application and check health
         env:
           IMAGE: ${{ needs.publish.outputs.image }}
-          APP_ENV_FILE: ${{ vars.APP_ENV_FILE }}
+          HOME_APP_ENV: ${{ secrets.HOME_APP_ENV }}
           APP_CERTS_DIR: ${{ vars.APP_CERTS_DIR }}
           APP_HOST_PORT: ${{ vars.APP_HOST_PORT }}
-        run: bash scripts/deploy-home.sh "$IMAGE"
+        run: |
+          set -euo pipefail
+          if [[ -z "$HOME_APP_ENV" ]]; then
+            echo "::error::Set HOME_APP_ENV in the home-production environment."
+            exit 1
+          fi
+          umask 077
+          APP_ENV_FILE=$(mktemp "$RUNNER_TEMP/houselink-env.XXXXXX")
+          trap 'rm -f -- "$APP_ENV_FILE"' EXIT
+          printf '%s\n' "$HOME_APP_ENV" > "$APP_ENV_FILE"
+          unset HOME_APP_ENV
+          export APP_ENV_FILE
+          bash scripts/deploy-home.sh "$IMAGE"
