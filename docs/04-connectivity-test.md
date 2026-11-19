@@ -68,14 +68,14 @@ cloudflared tunnel --url http://localhost:8080     # 출력되는 https://....tr
 | 변수 | 값 |
 |---|---|
 | `TOSS_APP_NAME` | 콘솔의 appName (CORS 허용 origin 생성에 사용) |
-| `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | MySQL |
+| `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | PostgreSQL |
 | `JWT_SECRET_BASE64` | `openssl rand -base64 32` |
 | `SPRING_PROFILES_ACTIVE` | **인증서가 있을 때만** `toss-mtls`. 없으면 비워 둔다(서버는 뜨지만 토스 호출은 503) |
 | `TOSS_MTLS_CERTIFICATE`, `TOSS_MTLS_PRIVATE_KEY` | `toss-mtls` 프로필일 때만 필요. `file:/절대/경로/cert.pem`, `file:/절대/경로/key.pkcs8.pem` (PEM 본문도 가능) |
 
 ```bash
-docker run -d --name fs-mysql -e MYSQL_ROOT_PASSWORD=pw -e MYSQL_DATABASE=family_share -p 3306:3306 mysql:8.4
-DB_URL=jdbc:mysql://localhost:3306/family_share DB_USERNAME=root DB_PASSWORD=<DB 비밀번호> \
+docker run -d --name fs-postgres -e POSTGRES_PASSWORD=pw -e POSTGRES_USER=familyshare -e POSTGRES_DB=family_share -p 5432:5432 postgres:17
+DB_URL=jdbc:postgresql://localhost:5432/family_share DB_USERNAME=familyshare DB_PASSWORD=<DB 비밀번호> \
 TOSS_APP_NAME=<appName> JWT_SECRET_BASE64=$(openssl rand -base64 32) \
 ./gradlew bootRun
 
@@ -86,7 +86,7 @@ DB_URL=... (위와 같은 변수) ./gradlew bootRun
 
 인증서 없이 켠 상태에서는 미니앱의 버튼 1(서버 연결)과 CORS까지 확인할 수 있고, 버튼 2(식별키 교환)는 503 "토스 서버와 통신하지 못했습니다"가 정상이다.
 
-`ddl-auto: create`라서 서버를 재시작할 때마다 데이터가 초기화된다.
+스키마는 Flyway가 생성하고 `ddl-auto: validate`로 검증하므로 서버를 재시작해도 데이터가 유지된다.
 
 ## 4. 서버 단독 점검 (미니앱 없이)
 
