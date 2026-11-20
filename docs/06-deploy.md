@@ -1,54 +1,88 @@
-# 배포 (컨테이너)
+# Debian 홈서버 배포
 
-서버는 컨테이너 이미지 하나로 배포한다. `Dockerfile`은 JDK 25로 빌드하고 JRE 25에서 일반 사용자로 실행한다.
-비밀값(DB 비밀번호, JWT 키, mTLS 인증서·키)은 이미지에 넣지 않고 환경변수와 마운트로 받는다.
+백엔드는 Dockerfile로 이미지를 만들고 `scripts/deploy-home.sh`가 `docker run`으로 실행한다. PostgreSQL 17은 홈서버의 기존 `postgres` 컨테이너를 사용한다. Compose는 사용하지 않는다. AWS Terraform과 state는 별도 정리 시점까지 보존한다.
 
-```bash
-docker build -t family-share .
-docker run -d -p 8080:8080 \
-  -e DB_URL='jdbc:mysql://<host>:3306/family_share?serverTimezone=UTC' -e DB_USERNAME=... -e DB_PASSWORD=... \
-  -e TOSS_APP_NAME=salim-link -e JWT_SECRET_BASE64=<base64 32바이트 이상> \
-  -e SPRING_PROFILES_ACTIVE=toss-mtls \
-  -e TOSS_MTLS_CERTIFICATE=file:/certs/toss.crt -e TOSS_MTLS_PRIVATE_KEY=file:/certs/toss.key \
-  -v /경로/certs:/certs:ro \
-  family-share
+## 서버 파일과 설정
+
+현재 서버 경로:
+
+- `/home/rojojun/houselink/certs/toss.crt`
+- `/home/rojojun/houselink/certs/toss.key`
+
+GitHub Settings → Environments → home-production → Environment secrets에 `HOME_APP_ENV`를 추가한다. 아래 형식대로 실제 값을 여러 줄로 입력한다. 실제 비밀번호와 JWT 키, 인증서는 Git에 넣지 않는다. JWT 키는 새로 발급한 값을 사용한다.
+
+```dotenv
+DB_URL=jdbc:postgresql://postgres:5432/family_share
+DB_USERNAME=familyshare
+DB_PASSWORD=PostgreSQL에서_설정한_값
+TOSS_APP_NAME=실제_콘솔_appName
+SPRING_PROFILES_ACTIVE=toss-mtls
+TOSS_MTLS_CERTIFICATE=file:/certs/toss.crt
+TOSS_MTLS_PRIVATE_KEY=file:/certs/toss.key
+JWT_SECRET_BASE64=새로_발급한_값
+ALERT_TEMPLATE_SET_CODE=
+SLACK_WEBHOOK_URL=
 ```
 
-## 환경변수
+`MYSQL_ROOT_PASSWORD`, `MTLS_DIR`은 새 배포에서 사용하지 않는다. `ALERT_TEMPLATE_SET_CODE`가 비어 있으면 실제 토스 알림은 발송하지 않는다. `SLACK_WEBHOOK_URL`은 가입 알림을 사용할 때 설정한다.
 
-| 이름 | 필수 | 설명 |
-|---|---|---|
-| `DB_URL` `DB_USERNAME` `DB_PASSWORD` | O | MySQL 8.4 |
-| `TOSS_APP_NAME` | O | 콘솔의 앱 이름(CORS 허용 도메인 `https://<appName>.apps.tossmini.com`, `.private-apps.tossmini.com`) |
-| `JWT_SECRET_BASE64` | O | 토큰 서명 키. 바꾸면 모든 로그인이 풀린다 |
-| `SPRING_PROFILES_ACTIVE=toss-mtls` | 운영 O | 이 프로필이 없으면 토스 호출이 실패한다(503) |
-| `TOSS_MTLS_CERTIFICATE` `TOSS_MTLS_PRIVATE_KEY` | 운영 O | PEM(`file:/절대경로` 또는 본문). 키는 PKCS#8 |
-| `ALERT_TEMPLATE_SET_CODE` | | 승인된 알림 템플릿 코드. 비우면 알림을 보내지 않고 기록만 한다 |
+Runner는 `HOME_APP_ENV`로 권한 600의 임시 파일을 만들고 배포 단계 종료 시 삭제한다. Docker는 컨테이너 환경 변수에 설정을 보관하므로 Docker 접근 권한이 있는 사용자는 값을 읽을 수 있다. 인증서 기본 경로는 runner 사용자의 `$HOME/houselink/certs`다. 컨테이너도 배포 사용자와 같은 UID/GID로 실행해 권한 600인 키를 읽는다. 디렉터리는 700, 비밀 파일은 600으로 보관한다.
 
-## 운영 전에 정할 것
+## 최초 수동 실행
 
-- **스키마(완료)**: Flyway가 `src/main/resources/db/migration`의 `V1__init.sql`부터 순서대로 적용한다. 서버는 시작할 때 엔티티와 스키마가 맞는지만 확인(`ddl-auto: validate`)하고 테이블을 만들거나 지우지 않는다. 컬럼·테이블을 바꿀 때는 **새 파일(`V2__…sql`)을 추가**하고 이미 적용된 파일은 고치지 않는다.
-- **인스턴스 수**: 알림 발송 스케줄러(`OutOfStockAlertDispatcher`)는 1분마다 대기 건을 처리한다. 인스턴스를 여러 개 띄우면 같은 알림이 중복될 수 있어, 지금은 1개만 띄운다(여러 개가 필요하면 발송 잠금을 추가해야 한다).
-- **인증서 만료**: mTLS 인증서는 2027-10-27에 만료된다. 교체 절차를 정해 둔다.
-- **HTTPS 주소**: 토스 앱은 HTTPS 도메인만 호출한다. 앱 번들 빌드 때 `VITE_API_BASE=https://<도메인>/api/v1`로 넣는다.
-
-## 로컬 개발에서의 변화
-
-- 예전에는 서버를 켤 때마다 DB가 초기화됐지만, 이제는 데이터가 남는다. 처음부터 다시 하려면 DB를 지우고 다시 만든다(`drop database family_share; create database family_share character set utf8mb4`).
-- 예전 방식(`ddl-auto: create`)으로 만든 DB에 새 서버를 붙이면 Flyway가 "기록 없는 비어 있지 않은 스키마"라며 멈춘다. 그때도 DB를 새로 만들면 된다.
-- 테스트는 H2 + `create-drop`을 쓰고 Flyway는 끈다(`src/test/resources/application.yaml`).
-
-## 작은 VM 한 대로 운영하기 (시범 운영)
-
-서버와 MySQL 을 한 VM 에서 `docker-compose.yml` 로 함께 돌린다. 메모리 제한이 걸려 있어(앱 600MB, DB 450MB) **RAM 2GB 급을 권장**하고, 1GB 는 스왑을 두면 시범 운영 정도는 가능하다.
+수동 실행은 `APP_ENV_FILE`로 환경 파일을 지정할 수 있다. 저장소를 준비한 홈서버에서 아래를 실행한다.
 
 ```bash
-cp .env.example .env        # 값 채우기 (JWT 키, DB 비밀번호, 인증서 폴더 MTLS_DIR)
-docker compose up -d --build
-curl localhost:8080/api/v1/health
+docker build -t houselink:local .
+APP_ENV_FILE=/path/to/local.env APP_PULL=false bash scripts/deploy-home.sh houselink:local
 ```
 
-- 컨테이너 포트는 `127.0.0.1:8080` 에만 열린다. 밖에서는 HTTPS 터널/프록시(예: Tailscale Funnel, Caddy)로 들어온다.
-- mTLS 인증서(`toss.crt`, `toss.key`)는 VM 의 `MTLS_DIR` 폴더에 직접 올린다(권한 600, 저장소에 넣지 않는다).
-- DB 데이터는 `dbdata` 볼륨에 저장된다. **백업 없이 운영하지 않는다**: 예) 매일 `mysqldump` 를 VM 밖에 보관.
-- 이 구성은 아직 실제 VM 에서 시험하지 않았다(compose 문법 검증만 완료).
+`APP_PULL=false`는 로컬 이미지를 사용하고 레지스트리에서 가져오지 않는 설정이다. 실행 후 상태를 확인한다.
+
+```bash
+curl --fail http://127.0.0.1:8080/api/v1/health
+```
+
+배포 스크립트는 `houselink` 네트워크를 만들고 기존 `postgres` 컨테이너를 연결한다. 앱만 교체하며 DB 컨테이너·볼륨·데이터는 삭제하지 않는다. 기본 앱 이름은 `houselink-app`, 포트는 `127.0.0.1:8080`이다. 외부 접근은 별도 HTTPS 프록시/터널에서 이 포트로 연결한다. 토스 앱의 `VITE_API_BASE`도 새 HTTPS 주소로 변경해 번들을 다시 빌드해야 한다.
+
+## GitHub Actions
+
+기존 CI는 유지한다. PostgreSQL 17 서비스에서 Flyway/JPA 검증을 추가했다. `source-is-main`과 기존 `ci` 필수 체크 이름도 유지하므로 기존 브랜치 룰셋을 바꿀 필요가 없다.
+
+배포 흐름:
+
+```text
+feature PR → main: 백엔드 테스트·프론트 타입/빌드 검사
+main PR → prod-back: 기존 검사 및 source-is-main
+prod-back push: 백엔드 테스트 → 이미지 빌드/GHCR 업로드 → 홈서버 교체/상태 확인
+```
+
+`.github/workflows/deploy-backend.yml`은 Linux amd64/arm64 이미지를 `ghcr.io/rojojun/app-toss-backend:<commit SHA>`에 올린다. 배포할 때는 태그 대신 해당 빌드의 digest를 사용한다. GHCR 인증은 workflow의 `GITHUB_TOKEN`으로 처리한다. 기존 패키지가 별도로 생성되어 있으면 패키지 Settings → Manage Actions access에서 이 저장소에 접근 권한을 부여해야 한다.
+
+### 최초 한 번 필요한 설정
+
+1. GitHub 저장소 Settings → Actions → Runners → New self-hosted runner에서 홈서버 OS/CPU에 맞는 명령을 실행한다. 추가 라벨은 `houselink`로 지정한다. runner를 서비스로 설치하고 시작한다.
+2. runner 계정이 `docker info`를 실행할 수 있어야 한다. Debian에 `curl`, `flock`도 필요하다. runner는 외부 HTTPS 연결로 작업을 수신하므로 SSH 배포는 사용하지 않는다.
+3. Settings → Environments에 `home-production`을 생성한다. `HOME_APP_ENV` 환경 시크릿을 등록한다. 필요하면 환경 Variables에 `APP_CERTS_DIR`와 `APP_HOST_PORT`를 지정한다.
+4. 변경을 main에 반영한 뒤 main → prod-back PR을 병합한다. 수동 실행은 Actions → Deploy backend to home server → Run workflow에서 `prod-back`을 선택한다. 다른 브랜치에서는 배포하지 않는다.
+
+CI는 GitHub 호스팅 runner, 실제 교체 job만 홈서버 runner에서 실행한다. Terraform apply/destroy, SSH, AWS 인증은 workflow에 포함하지 않는다.
+
+## 실패 시 동작과 제한
+
+- 교체 전 `.env`, 인증서 읽기 권한, PostgreSQL 상태, 새 이미지 다운로드 및 컨테이너 생성을 확인한다.
+- 이전 앱을 중지하고 새 앱 하나를 실행한다. 알림 스케줄러 중복 실행을 피하기 위한 방식이며 짧은 중단 시간이 있다.
+- `/api/v1/health`를 최대 약 2분간 확인한다. 실패하면 새 앱을 제거하고 이전 앱을 다시 시작한다. 최초 배포에는 되돌릴 앱이 없으므로 실패 상태로 종료한다.
+- DB 마이그레이션은 자동 롤백하지 않는다. 향후 스키마 변경은 이전 앱과 호환되게 작성해야 한다. 이미지 재시작만으로 DB 변경이 되돌아가지는 않는다.
+- `houselink-app-next` 또는 `houselink-app-previous`가 남아 있으면 내용을 확인하도록 배포를 중단한다. 전체 이미지 정리/prune은 실행하지 않는다.
+- 실패한 새 앱의 로그는 runner 사용자의 `~/.local/state/houselink/last-failed-deploy.log`에 권한 600으로 보관한다. 실행 중인 앱 로그는 홈서버에서 `docker logs --tail 100 houselink-app`으로 확인한다. 비밀값이 포함될 수 있어 그대로 공개하지 않는다.
+- 앱은 `ddl-auto: validate`로 검증하고 Flyway가 버전별 SQL을 적용한다. 이미 적용한 PostgreSQL V1은 고치지 않고 V2부터 추가한다.
+- 운영 MySQL 이관은 [데이터 이관 문서](07-data-migration.md)를 참고한다. MySQL Flyway 이력을 PostgreSQL로 복사하지 않는다.
+- 데이터 백업은 `pg_dump` 등을 통해 별도로 유지한다. 이 배포는 DB 백업이나 HTTPS/토스 실기기 검증을 대신하지 않는다.
+
+## 이번 변경의 로컬 검증
+
+- Java 25에서 전체 백엔드 테스트 6개 통과. PostgreSQL 17에 실제 Flyway V1 적용, Hibernate validate와 UUID/사용자 상태 저장·조회 포함.
+- Docker 이미지 빌드와 실제 앱 기동 통과. 이관 데이터 사본으로 HTTP health, 사용자 10명의 인증된 내 정보 조회, 멤버십 4개의 물품 수량/버전, 모든 물품의 이력 건수를 확인했다.
+- 배포 스크립트의 최초 배포·정상 교체·상태 확인 실패 시 복구·잘못된 설정 사전 차단 테스트 4개 통과. 실제 홈서버 교체 테스트는 아직 하지 않았다.
+- Actions actionlint와 배포 스크립트 ShellCheck 통과. GHCR 업로드, amd64/arm64 원격 빌드, runner 배포, 토스 mTLS/HTTPS 실연동은 실제 Actions/홈서버에서 확인해야 한다.

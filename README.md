@@ -13,17 +13,17 @@
 
 | 위치 | 내용 |
 |---|---|
-| `src/` | 백엔드 (Spring Boot 4, Java 25, JPA, MySQL 8.4, Flyway) |
+| `src/` | 백엔드 (Spring Boot 4, Java 25, JPA, PostgreSQL 17, Flyway) |
 | `miniapp/` | 토스 미니앱 (React 18, TypeScript, Vite, 토스 디자인 시스템 TDS) |
 | `miniapp/design/` | 화면 와이어프레임과 앱 아이콘 |
 | `docs/` | 기획, API 규격, 연동 테스트, 알림 템플릿, 배포 문서 |
 
 ## 백엔드 실행
 
-필요한 것: JDK 25, MySQL 8.4
+필요한 것: JDK 25, PostgreSQL 17
 
 ```bash
-export DB_URL='jdbc:mysql://localhost:3306/family_share?serverTimezone=UTC'
+export DB_URL='jdbc:postgresql://localhost:5432/family_share'
 export DB_USERNAME=<사용자> DB_PASSWORD=<비밀번호>
 export TOSS_APP_NAME=<콘솔의 앱 이름>
 export JWT_SECRET_BASE64=$(head -c32 /dev/urandom | base64)
@@ -62,7 +62,7 @@ AIT_APP_NAME=<앱 이름> VITE_API_BASE=https://<서버 주소>/api/v1 npm run b
 - 토스 mTLS 인증서와 개인 키(`*.crt`, `*.key`, `*.pem`)
 - 서버 주소가 박힌 앱 번들(`*.ait`)
 
-자리표시자만 있는 `.env.example`(백엔드 루트, `miniapp/`)만 올라갑니다. 서버를 띄우는 방법은 [docs/06-deploy.md](docs/06-deploy.md)를 보세요.
+자리표시자만 있는 `.env.example`(백엔드 루트, `miniapp/`)만 올라갑니다. 홈서버에서는 기존 PostgreSQL 컨테이너와 앱 컨테이너를 별도로 운영합니다. `prod-back` 반영 시 GitHub Actions가 이미지를 GHCR에 올리고 홈서버 runner가 배포합니다. 설정 방법은 [docs/06-deploy.md](docs/06-deploy.md)를 보세요.
 
 ## 문서
 

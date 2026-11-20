@@ -55,9 +55,18 @@ certs/
 .postman/
 .tailscale*/
 *.log
+__pycache__/
+*.pyc
+# 운영 백업과 이관 산출물
+*.sql.gz
+*.tar.gz
+/output/migration/
 .DS_Store
 .claude/
 # infra
 infra/terraform/.terraform
 infra/terraform/*.tfstate*
 infra/terraform/*.tfplan
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
