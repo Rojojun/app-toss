@@ -6,11 +6,10 @@
 
 현재 서버 경로:
 
-- `/home/rojojun/houselink/houselink/.env`
 - `/home/rojojun/houselink/certs/toss.crt`
 - `/home/rojojun/houselink/certs/toss.key`
 
-`.env.example`을 기준으로 기존 `.env`의 아래 항목을 수정한다. 실제 비밀번호와 JWT 키, 인증서는 Git에 넣지 않는다. 기존 JWT 키는 유지한다.
+GitHub Settings → Environments → home-production → Environment secrets에 `HOME_APP_ENV`를 추가한다. 아래 형식대로 실제 값을 여러 줄로 입력한다. 실제 비밀번호와 JWT 키, 인증서는 Git에 넣지 않는다. JWT 키는 새로 발급한 값을 사용한다.
 
 ```dotenv
 DB_URL=jdbc:postgresql://postgres:5432/family_share
@@ -20,22 +19,22 @@ TOSS_APP_NAME=실제_콘솔_appName
 SPRING_PROFILES_ACTIVE=toss-mtls
 TOSS_MTLS_CERTIFICATE=file:/certs/toss.crt
 TOSS_MTLS_PRIVATE_KEY=file:/certs/toss.key
-JWT_SECRET_BASE64=기존_값_유지
+JWT_SECRET_BASE64=새로_발급한_값
 ALERT_TEMPLATE_SET_CODE=
 SLACK_WEBHOOK_URL=
 ```
 
 `MYSQL_ROOT_PASSWORD`, `MTLS_DIR`은 새 배포에서 사용하지 않는다. `ALERT_TEMPLATE_SET_CODE`가 비어 있으면 실제 토스 알림은 발송하지 않는다. `SLACK_WEBHOOK_URL`은 가입 알림을 사용할 때 설정한다.
 
-Runner는 해당 `.env`와 인증서를 읽을 수 있는 사용자로 실행한다. 기본 경로는 runner 사용자의 `$HOME/houselink` 기준이므로 다른 계정을 사용하면 아래 Actions 변수를 지정한다. 컨테이너도 배포 사용자와 같은 UID/GID로 실행해 권한 600인 키를 읽는다. 디렉터리는 700, 비밀 파일은 600으로 보관한다.
+Runner는 `HOME_APP_ENV`로 권한 600의 임시 파일을 만들고 배포 단계 종료 시 삭제한다. Docker는 컨테이너 환경 변수에 설정을 보관하므로 Docker 접근 권한이 있는 사용자는 값을 읽을 수 있다. 인증서 기본 경로는 runner 사용자의 `$HOME/houselink/certs`다. 컨테이너도 배포 사용자와 같은 UID/GID로 실행해 권한 600인 키를 읽는다. 디렉터리는 700, 비밀 파일은 600으로 보관한다.
 
 ## 최초 수동 실행
 
-저장소를 준비한 홈서버에서:
+수동 실행은 `APP_ENV_FILE`로 환경 파일을 지정할 수 있다. 저장소를 준비한 홈서버에서 아래를 실행한다.
 
 ```bash
 docker build -t houselink:local .
-APP_PULL=false bash scripts/deploy-home.sh houselink:local
+APP_ENV_FILE=/path/to/local.env APP_PULL=false bash scripts/deploy-home.sh houselink:local
 ```
 
 `APP_PULL=false`는 로컬 이미지를 사용하고 레지스트리에서 가져오지 않는 설정이다. 실행 후 상태를 확인한다.
@@ -64,7 +63,7 @@ prod-back push: 백엔드 테스트 → 이미지 빌드/GHCR 업로드 → 홈�
 
 1. GitHub 저장소 Settings → Actions → Runners → New self-hosted runner에서 홈서버 OS/CPU에 맞는 명령을 실행한다. 추가 라벨은 `houselink`로 지정한다. runner를 서비스로 설치하고 시작한다.
 2. runner 계정이 `docker info`를 실행할 수 있어야 한다. Debian에 `curl`, `flock`도 필요하다. runner는 외부 HTTPS 연결로 작업을 수신하므로 SSH 배포는 사용하지 않는다.
-3. Settings → Environments에 `home-production`을 생성한다. 경로 기본값이 맞으면 추가 변수나 서버 비밀값을 GitHub에 등록할 필요가 없다. 필요하면 환경 Variables에 `APP_ENV_FILE`, `APP_CERTS_DIR`, `APP_HOST_PORT`를 지정한다.
+3. Settings → Environments에 `home-production`을 생성한다. `HOME_APP_ENV` 환경 시크릿을 등록한다. 필요하면 환경 Variables에 `APP_CERTS_DIR`와 `APP_HOST_PORT`를 지정한다.
 4. 변경을 main에 반영한 뒤 main → prod-back PR을 병합한다. 수동 실행은 Actions → Deploy backend to home server → Run workflow에서 `prod-back`을 선택한다. 다른 브랜치에서는 배포하지 않는다.
 
 CI는 GitHub 호스팅 runner, 실제 교체 job만 홈서버 runner에서 실행한다. Terraform apply/destroy, SSH, AWS 인증은 workflow에 포함하지 않는다.
